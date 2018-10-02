@@ -1,0 +1,35 @@
+[
+  {
+    "verbose": true,
+    "debounce": true,
+    "folder": "/mnt/prod/Server/Transfer/701/%Y/%m/%d/",
+    "trigger": "ticker",
+    "ticker": 2000,
+    "onlynew": false,
+    "match": "^[0-9]+\\.[Tt][Xx][Tt]$",
+    "action": [
+      {
+        "do": "sleep",
+        "config": "/application/go/fsagentcarrier/sleep01.json",
+        "onSuccess": [
+          {
+            "do": "mail",
+            "config": "/application/go/fsagentcarrier/mail01.json",
+            "onSuccess": [
+              {
+                "do": "move",
+                "config": "/application/go/fsagentcarrier/fileSuccess01.json"
+              }
+            ],
+            "onFailure": [
+              {
+                "do": "move",
+                "config": "/application/go/fsagentcarrier/fileFailure01.json"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

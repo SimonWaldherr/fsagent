@@ -1,0 +1,13 @@
+{
+  "name": "mail",
+  "subject": "Lorem Ipsum",
+  "body": "dolor sit amet",
+  "from": "notification@company.tld",
+  "to": ["example@domain.tld"],
+  "cc": ["example2@domain.tld"],
+  "bcc": ["example3@domain.tld"],
+  "user": "notification",
+  "pass": "spring2018",
+  "server": "webmail.domain.tld",
+  "port": 587
+}
