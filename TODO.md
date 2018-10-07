@@ -7,3 +7,7 @@ these features will come sometime
 * search/extract strings from files
 * file-checks (e.g. on file size)
 * more comments in source code
+* database inserts (csv to db)
+* status website
+* add config file editor
+* use Blockly as graphical editor
