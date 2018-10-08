@@ -1,0 +1,22 @@
+{
+  "name": "fsagent",
+  "version": "1.0.1",
+  "description": "fsagent is a Golang Application to perform various standard actions triggered by various events",
+  "main": "fsagent.go",
+  "files": [
+    "fsagent.go"
+  ],
+  "repository": "https://github.com/SimonWaldherr/fsagent",
+  "keywords": [
+    "filesystem",
+    "events",
+    "golang",
+    "devops"
+  ],
+  "author": {
+    "name": "Simon Waldherr",
+    "email": "contact@simonwaldherr.de",
+    "twitter": "@SimonWaldherr"
+  },
+  "license": "MIT License"
+}

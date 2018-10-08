@@ -135,3 +135,7 @@ Compress   | compresses a file
 HttpPostR. | sends the content of a file in a HTTP Post Request Body
 SendMail   | sends the file as mail attachment
 Sleep      | waits for a specified duration
+
+## Todo / Contribute
+
+Informations about the [license](https://github.com/SimonWaldherr/fsagent/blob/master/LICENSE), [how to contribute](https://github.com/SimonWaldherr/fsagent/blob/master/CONTRIBUTING.md) and a [list of improvements to do](https://github.com/SimonWaldherr/fsagent/blob/master/TODO.md) are in separate files.
