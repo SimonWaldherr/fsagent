@@ -1,9 +1,6 @@
 package modules
 
 import (
-	"encoding/json"
-	"fmt"
-	"simonwaldherr.de/go/golibs/file"
 	"time"
 )
 
@@ -11,13 +8,20 @@ type sleepConfig struct {
 	Time int `json:"time"`
 }
 
-func Sleep(configName, fileName string) error {
-	_ = fileName
-	fmt.Printf("file name: %v\n", fileName)
-	var c sleepConfig
-	fmt.Printf("load config from: %v\n", configName)
-	str, _ := file.Read(configName)
-	json.Unmarshal([]byte(str), &c)
+type Sleep struct{}
+
+func (Sleep) Name() string {
+	return "sleep"
+}
+
+func (Sleep) EmptyConfig() interface{} {
+	return &sleepConfig{}
+}
+
+func (Sleep) Perform(config interface{}, fileName string) error {
+	c := config.(sleepConfig)
+
 	time.Sleep(time.Millisecond * time.Duration(c.Time))
+
 	return nil
 }

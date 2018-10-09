@@ -1,7 +1,6 @@
 package main
 
 import (
-	modules "./modules"
 	"encoding/json"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
@@ -11,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"simonwaldherr.de/go/fsagent/modules"
 	"simonwaldherr.de/go/golibs/cache"
 	"simonwaldherr.de/go/golibs/file"
 	"simonwaldherr.de/go/golibs/regex"
@@ -19,7 +19,8 @@ import (
 	"time"
 )
 
-type Config []struct {
+// Config represents an element of the application configuration.
+type Config struct {
 	Verbose  bool   `json:"verbose"`
 	Debounce bool   `json:"debounce"`
 	Folder   string `json:"folder"`
@@ -30,44 +31,51 @@ type Config []struct {
 	Action   Action `json:"action"`
 }
 
+// Action is something that should be performed.
 type Action []struct {
-	Do        string `json:"do"`
-	Config    string `json:"config"`
-	Onsuccess Action `json:"onSuccess"`
-	Onfailure Action `json:"onFailure"`
+	Do        string          `json:"do"`
+	Config    json.RawMessage `json:"config"`
+	Onsuccess Action          `json:"onSuccess"`
+	Onfailure Action          `json:"onFailure"`
 }
 
-func logPrintf(format string, v ...interface{}) {
-	str := fmt.Sprintf(format, v...)
-	log.Print(str)
+// Actionable defines a common set of methods each action should have.
+type Actionable interface {
+	Name() string
+	EmptyConfig() interface{}
+	Perform(config interface{}, fileName string) error
+}
+
+// Actions is a list of Actionable types that can be added to.
+var Actions = []Actionable{
+	&modules.Mail{},
+	&modules.HTTP{},
+	&modules.Sleep{},
+	&modules.Delete{},
+	&modules.Move{},
+	&modules.Decompress{},
+	&modules.Compress{},
+	&modules.IsFile{},
 }
 
 func do(act Action, file string) {
 	for _, a := range act {
 		var err error
-		logPrintf("Do \"%v\" on file \"%v\"\n", a.Do, file)
-		switch a.Do {
-		case "mail":
-			err = modules.SendMail(a.Config, file)
-		case "http":
-			err = modules.HttpPostRequest(a.Config, file)
-		case "sleep":
-			err = modules.Sleep(a.Config, file)
-		case "delete":
-			err = modules.Delete(a.Config, file)
-		case "move":
-			err = modules.Move(a.Config, file)
-		case "decompress":
-			err = modules.Decompress(a.Config, file)
-		case "compress":
-			err = modules.Compress(a.Config, file)
-		case "isfile":
-			err = modules.IsFile(a.Config, file)
+		log.Printf("Do \"%v\" on file \"%v\"\n", a.Do, file)
+
+		for _, action := range Actions {
+			if a.Do == action.Name() {
+				config := action.EmptyConfig()
+				json.Unmarshal(a.Config, &config)
+				err = action.Perform(a.Config, file)
+				break
+			}
 		}
+
 		if err == nil {
 			do(a.Onsuccess, file)
 		} else {
-			logPrintf("Error on \"%v\" for file \"%v\"", err, file)
+			log.Printf("Error on \"%v\" for file \"%v\"", err, file)
 			do(a.Onfailure, file)
 		}
 	}
@@ -77,18 +85,20 @@ var done chan bool
 var stop bool
 var wg sync.WaitGroup
 
-func FileLastModified(filename string) (time.Time, error) {
+// FileLastModified returns the Time a file was last modified.
+func FileLastModified(filename string) (*time.Time, error) {
 	f, err := os.Open(filename)
 	if err != nil {
-		return time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC), err
+		return nil, err
 	}
 	defer f.Close()
-	statinfo, _ := f.Stat()
-	return statinfo.ModTime(), nil
+	statInfo, _ := f.Stat()
+	modTime := statInfo.ModTime()
+	return &modTime, nil
 }
 
 func (p *program) run() {
-	var config Config
+	var config []Config
 	str, _ := file.Read(os.Args[1])
 
 	err := json.Unmarshal([]byte(str), &config)
@@ -104,16 +114,7 @@ func (p *program) run() {
 	for _, conf := range config {
 		fmt.Println("load config ...")
 
-		go func(configuration struct {
-			Verbose  bool   `json:"verbose"`
-			Debounce bool   `json:"debounce"`
-			Folder   string `json:"folder"`
-			Trigger  string `json:"trigger"`
-			Ticker   int    `json:"ticker"`
-			OnlyNew  bool   `json:"onlynew"`
-			Match    string `json:"match"`
-			Action   Action `json:"action"`
-		}) {
+		go func(configuration Config) {
 			var timer *time.Ticker
 			var eventCache *cache.Cache
 
