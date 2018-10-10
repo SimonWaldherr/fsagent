@@ -2,7 +2,6 @@ package modules
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"simonwaldherr.de/go/golibs/file"
@@ -13,13 +12,21 @@ type httpConfig struct {
 	Path string `json:"path"`
 }
 
-func HttpPostRequest(configName, fileName string) error {
-	var c httpConfig
-	str, _ := file.Read(configName)
-	err := json.Unmarshal([]byte(str), &c)
+type HTTP struct{}
+
+func (HTTP) Name() string {
+	return "http"
+}
+
+func (HTTP) EmptyConfig() interface{} {
+	return &httpConfig{}
+}
+
+func (HTTP) Perform(config interface{}, fileName string) error {
+	c := config.(httpConfig)
 
 	client := &http.Client{}
-	str, _ = file.Read(fileName)
+	str, _ := file.Read(fileName)
 	body := bytes.NewBufferString(str)
 	clength := strconv.Itoa(len(str))
 	r, _ := http.NewRequest("POST", c.Path, body)
@@ -28,17 +35,14 @@ func HttpPostRequest(configName, fileName string) error {
 	r.Header.Add("Content-Length", clength)
 
 	rsp, err := client.Do(r)
-
 	if err != nil {
 		return err
-	} else {
-		defer func() {
-			rsp.Body.Close()
-		}()
-		if rsp.StatusCode == 200 {
-			return err
-		} else {
-			return fmt.Errorf("The remote end did not return a HTTP 200 (OK) response:%#v\n", rsp)
-		}
 	}
+	defer rsp.Body.Close()
+
+	if rsp.StatusCode == 200 {
+		return nil
+	}
+
+	return fmt.Errorf("the remote did not return a HTTP 200 response: %#v", rsp)
 }

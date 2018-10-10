@@ -2,7 +2,6 @@ package modules
 
 import (
 	"compress/flate"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -17,51 +16,70 @@ type fileConfig struct {
 	Name string `json:"name"`
 }
 
-func Copy(configName, fileName string) error {
-	var c fileConfig
-	str, _ := file.Read(configName)
-	err := json.Unmarshal([]byte(str), &c)
-	if err != nil {
-		return err
-	}
+type baseFile struct{}
 
+func (baseFile) EmptyConfig() interface{} {
+	return &fileConfig{}
+}
+
+func formatName(c fileConfig, fileName string) string {
 	_, filename := filepath.Split(fileName)
-	str = xtime.Fmt(c.Name, time.Now())
+	str := xtime.Fmt(c.Name, time.Now())
 	str = strings.Replace(str, "$file", "%v", -1)
 	str = fmt.Sprintf(str, filename)
+	return str
+}
+
+func Copy(config interface{}, fileName string) error {
+	c := config.(fileConfig)
+
+	str := formatName(c, fileName)
+
 	return file.Copy(fileName, str)
 }
 
-func Delete(configName, fileName string) error {
+type Delete struct {
+	baseFile
+}
+
+func (Delete) Name() string {
+	return "delete"
+}
+
+func (Delete) Perform(_ interface{}, fileName string) error {
 	return file.Delete(fileName)
 }
 
-func Move(configName, fileName string) error {
-	var c fileConfig
-	str, _ := file.Read(configName)
-	err := json.Unmarshal([]byte(str), &c)
-	if err != nil {
-		return err
-	}
+type Move struct {
+	baseFile
+}
+
+func (Move) Name() string {
+	return "move"
+}
+
+func (Move) Perform(config interface{}, fileName string) error {
+	c := config.(fileConfig)
 
 	_, filename := filepath.Split(fileName)
-	str = xtime.Fmt(c.Name, time.Now())
+	str := xtime.Fmt(c.Name, time.Now())
 	str = strings.Replace(str, "$file", "%v", -1)
 	str = fmt.Sprintf(str, filename)
 	return file.Rename(fileName, str)
 }
 
-func Decompress(configName, fileName string) error {
-	var c fileConfig
-	str, _ := file.Read(configName)
-	if err := json.Unmarshal([]byte(str), &c); err != nil {
-		return err
-	}
+type Decompress struct {
+	baseFile
+}
 
-	_, filename := filepath.Split(fileName)
-	str = xtime.Fmt(c.Name, time.Now())
-	str = strings.Replace(str, "$file", "%v", -1)
-	str = fmt.Sprintf(str, filename)
+func (Decompress) Name() string {
+	return "decompress"
+}
+
+func (Decompress) Perform(config interface{}, fileName string) error {
+	c := config.(fileConfig)
+
+	str := formatName(c, fileName)
 
 	i, err := os.Open(fileName)
 	if err != nil {
@@ -85,18 +103,18 @@ func Decompress(configName, fileName string) error {
 	return nil
 }
 
-func Compress(configName, fileName string) error {
-	var c fileConfig
-	str, _ := file.Read(configName)
-	err := json.Unmarshal([]byte(str), &c)
-	if err != nil {
-		return err
-	}
+type Compress struct {
+	baseFile
+}
 
-	_, filename := filepath.Split(fileName)
-	str = xtime.Fmt(c.Name, time.Now())
-	str = strings.Replace(str, "$file", "%v", -1)
-	str = fmt.Sprintf(str, filename)
+func (Compress) Name() string {
+	return "compress"
+}
+
+func (Compress) Perform(config interface{}, fileName string) error {
+	c := config.(fileConfig)
+
+	str := formatName(c, fileName)
 
 	i, err := os.Open(fileName)
 	if err != nil {
@@ -123,7 +141,15 @@ func Compress(configName, fileName string) error {
 	return nil
 }
 
-func IsFile(configName, fileName string) error {
+type IsFile struct {
+	baseFile
+}
+
+func (IsFile) Name() string {
+	return "isfile"
+}
+
+func (IsFile) Perform(config interface{}, fileName string) error {
 	if file.IsFile(fileName) {
 		return nil
 	}
