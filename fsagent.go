@@ -67,7 +67,7 @@ func do(act Action, file string) {
 			if a.Do == action.Name() {
 				config := action.EmptyConfig()
 				json.Unmarshal(a.Config, &config)
-				err = action.Perform(a.Config, file)
+				err = action.Perform(config, file)
 				break
 			}
 		}

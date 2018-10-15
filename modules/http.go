@@ -23,7 +23,7 @@ func (HTTP) EmptyConfig() interface{} {
 }
 
 func (HTTP) Perform(config interface{}, fileName string) error {
-	c := config.(httpConfig)
+	c := config.(*httpConfig)
 
 	client := &http.Client{}
 	str, _ := file.Read(fileName)

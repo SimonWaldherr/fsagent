@@ -31,9 +31,9 @@ func formatName(c fileConfig, fileName string) string {
 }
 
 func Copy(config interface{}, fileName string) error {
-	c := config.(fileConfig)
+	c := config.(*fileConfig)
 
-	str := formatName(c, fileName)
+	str := formatName(*c, fileName)
 
 	return file.Copy(fileName, str)
 }
@@ -59,7 +59,7 @@ func (Move) Name() string {
 }
 
 func (Move) Perform(config interface{}, fileName string) error {
-	c := config.(fileConfig)
+	c := config.(*fileConfig)
 
 	_, filename := filepath.Split(fileName)
 	str := xtime.Fmt(c.Name, time.Now())
@@ -77,9 +77,9 @@ func (Decompress) Name() string {
 }
 
 func (Decompress) Perform(config interface{}, fileName string) error {
-	c := config.(fileConfig)
+	c := config.(*fileConfig)
 
-	str := formatName(c, fileName)
+	str := formatName(*c, fileName)
 
 	i, err := os.Open(fileName)
 	if err != nil {
@@ -112,9 +112,9 @@ func (Compress) Name() string {
 }
 
 func (Compress) Perform(config interface{}, fileName string) error {
-	c := config.(fileConfig)
+	c := config.(*fileConfig)
 
-	str := formatName(c, fileName)
+	str := formatName(*c, fileName)
 
 	i, err := os.Open(fileName)
 	if err != nil {

@@ -39,7 +39,7 @@ func (Mail) EmptyConfig() interface{} {
 }
 
 func (Mail) Perform(config interface{}, fileName string) error {
-	c := config.(mailConfig)
+	c := config.(*mailConfig)
 
 	m := gomail.NewMessage()
 	m.SetHeader("From", c.From)

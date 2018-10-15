@@ -19,7 +19,7 @@ func (Sleep) EmptyConfig() interface{} {
 }
 
 func (Sleep) Perform(config interface{}, fileName string) error {
-	c := config.(sleepConfig)
+	c := config.(*sleepConfig)
 
 	time.Sleep(time.Millisecond * time.Duration(c.Time))
 
