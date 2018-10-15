@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/SimonWaldherr/gwv"
 	"github.com/fsnotify/fsnotify"
 	"github.com/kardianos/service"
 	"io/ioutil"
+	"strings"
 	"log"
 	"os"
 	"os/signal"
@@ -65,6 +67,10 @@ func do(act Action, file string) {
 
 		for _, action := range Actions {
 			if a.Do == action.Name() {
+				go func() {
+					fmt.Printf("run action %v on file %v at %v", a.Do, file, xtime.Fmt("%Y-%m-%d %H:%M:%S", time.Now()))
+					hub.Messages <- fmt.Sprintf("run action <span title=\"%s\">%v</span> on file %v at %v\n", strings.Replace(fmt.Sprintf("%s", a.Config), "\"", "&quot;", -1), a.Do, file, xtime.Fmt("%Y-%m-%d %H:%M:%S", time.Now()))
+				}()
 				config := action.EmptyConfig()
 				json.Unmarshal(a.Config, &config)
 				err = action.Perform(config, file)
@@ -194,6 +200,7 @@ func (p *program) run() {
 }
 
 var logger service.Logger
+var hub *gwv.Connections
 
 type program struct{}
 
@@ -234,6 +241,10 @@ func main() {
 			fmt.Printf("Signal: %v\n", sig)
 			prg.Stop(s)
 		}
+	}()
+
+	go func() {
+		hub = startWebGui()
 	}()
 
 	fmt.Println("run ...")
