@@ -4,8 +4,14 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/SimonWaldherr/golibs/cachedfile"
+	"github.com/SimonWaldherr/golibs/file"
 	"simonwaldherr.de/go/fsagent/modules"
 )
+
+func init() {
+	cachedfile.Init()
+}
 
 // Action is something that should be performed.
 type Action []struct {
@@ -42,7 +48,13 @@ func do(act Action, file string) {
 		for _, action := range Actions {
 			if a.Do == action.Name() {
 				config := action.EmptyConfig()
-				json.Unmarshal(a.Config, &config)
+				if file.IsFile(a.Config) {
+					str, _ := cachedfile.Read(a.Config)
+					json.Unmarshal(str, &config)
+				} else {
+					json.Unmarshal(a.Config, &config)
+				}
+
 				err = action.Perform(config, file)
 				break
 			}
