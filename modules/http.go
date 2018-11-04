@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"simonwaldherr.de/go/golibs/file"
 	"strconv"
+
+	"simonwaldherr.de/go/golibs/file"
 )
 
 type httpConfig struct {

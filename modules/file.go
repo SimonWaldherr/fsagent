@@ -6,10 +6,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"simonwaldherr.de/go/golibs/file"
-	"simonwaldherr.de/go/golibs/xtime"
 	"strings"
 	"time"
+
+	"simonwaldherr.de/go/golibs/file"
+	"simonwaldherr.de/go/golibs/xtime"
 )
 
 type fileConfig struct {
