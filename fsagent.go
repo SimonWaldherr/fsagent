@@ -1,22 +1,23 @@
-package main
+package fsagent
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/fsnotify/fsnotify"
-	"github.com/kardianos/service"
 	"io/ioutil"
 	"log"
 	"os"
-	"os/signal"
 	"path/filepath"
+	"sync"
+	"time"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/kardianos/service"
+
 	"simonwaldherr.de/go/fsagent/modules"
 	"simonwaldherr.de/go/golibs/cache"
 	"simonwaldherr.de/go/golibs/file"
 	"simonwaldherr.de/go/golibs/regex"
 	"simonwaldherr.de/go/golibs/xtime"
-	"sync"
-	"time"
 )
 
 // Config represents an element of the application configuration.
@@ -83,7 +84,9 @@ func do(act Action, file string) {
 
 var done chan bool
 var stop bool
-var wg sync.WaitGroup
+var WG sync.WaitGroup
+
+type Program struct{}
 
 // FileLastModified returns the Time a file was last modified.
 func FileLastModified(filename string) (*time.Time, error) {
@@ -97,7 +100,20 @@ func FileLastModified(filename string) (*time.Time, error) {
 	return &modTime, nil
 }
 
-func (p *program) run() {
+func (p *Program) Start(s service.Service) error {
+	done = make(chan bool)
+	go p.run()
+	return nil
+}
+
+func (p *Program) Stop(s service.Service) error {
+	stop = true
+	<-done
+	WG.Wait()
+	return nil
+}
+
+func (p *Program) run() {
 	var config []Config
 	str, _ := file.Read(os.Args[1])
 
@@ -133,9 +149,9 @@ func (p *program) run() {
 				timer = time.NewTicker(time.Millisecond * time.Duration(conf.Ticker))
 			}
 
-			wg.Add(1)
+			WG.Add(1)
 			defer func() {
-				wg.Done()
+				WG.Done()
 			}()
 
 			for !stop {
@@ -191,54 +207,4 @@ func (p *program) run() {
 		}(conf)
 	}
 	done <- true
-}
-
-var logger service.Logger
-
-type program struct{}
-
-func (p *program) Start(s service.Service) error {
-	done = make(chan bool)
-	go p.run()
-	return nil
-}
-
-func (p *program) Stop(s service.Service) error {
-	stop = true
-	<-done
-	wg.Wait()
-	return nil
-}
-
-func main() {
-	svcConfig := &service.Config{
-		Name:        "fsagent",
-		DisplayName: "FileSystem Agent",
-		Description: "this service can monitor a folder and do configurable things on filesystem triggers.",
-	}
-
-	prg := &program{}
-	s, err := service.New(prg, svcConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
-	logger, err = s.Logger(nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		for sig := range c {
-			fmt.Printf("Signal: %v\n", sig)
-			prg.Stop(s)
-		}
-	}()
-
-	fmt.Println("run ...")
-	err = s.Run()
-	if err != nil {
-		logger.Error(err)
-	}
 }
