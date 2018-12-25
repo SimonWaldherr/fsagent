@@ -2,7 +2,7 @@
 
 these features will come sometime
 
-* [ ] support for YAML
+* [ ] support for [YAML](https://en.wikipedia.org/wiki/YAML)
 * [ ] more verbose logging
 * [ ] search/extract strings from files
 * [ ] file-checks (e.g. on file size)
@@ -10,12 +10,12 @@ these features will come sometime
 * [ ] database inserts (csv to db)
 * [ ] status website
 * [ ] add config file editor
-* [ ] use Blockly as graphical editor
+* [ ] use [Blockly](https://developers.google.com/blockly/) as graphical editor
 * [ ] add (S)FTP(S)-Support
   * [ ] as Action
-* [ ] add AMQP-Support
+* [ ] add [AMQP](https://en.wikipedia.org/wiki/Advanced_Message_Queuing_Protocol)-Support
   * [ ] as Trigger
   * [ ] as Action
-* [ ] add WebSub-Support
+* [ ] add [WebSub](https://en.wikipedia.org/wiki/WebSub)-Support
   * [ ] as Trigger
   * [ ] as Action
