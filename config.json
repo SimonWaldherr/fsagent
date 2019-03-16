@@ -7,37 +7,50 @@
   "onlynew": false,
   "match": "^[0-9]+\\.[Tt][Xx][Tt]$",
   "action": [{
-    "do": "sleep",
+    "do": "checksize",
     "config": {
-      "time": 500
+      "minSize": "1MB",
+      "maxSize": "5MB"
     },
     "onSuccess": [{
-      "do": "mail",
+      "do": "sleep",
       "config": {
-        "name": "mail",
-        "subject": "Lorem Ipsum",
-        "body": "dolor sit amet",
-        "from": "notification@company.tld",
-        "to": ["example@domain.tld"],
-        "cc": ["example2@domain.tld"],
-        "bcc": ["example3@domain.tld"],
-        "user": "notification",
-        "pass": "spring2018",
-        "server": "webmail.domain.tld",
-        "port": 587
+        "time": 500
       },
       "onSuccess": [{
-        "do": "move",
+        "do": "mail",
         "config": {
-          "name": "/mnt/prod/Server/Archive/701/$file_%Y%m%d%H%M%S"
-        }
-      }],
-      "onFailure": [{
-        "do": "move",
-        "config": {
-          "name": "/mnt/prod/Server/Error/701/$file_%Y%m%d%H%M%S"
-        }
+          "name": "mail",
+          "subject": "Lorem Ipsum",
+          "body": "dolor sit amet",
+          "from": "notification@company.tld",
+          "to": ["example@domain.tld"],
+          "cc": ["example2@domain.tld"],
+          "bcc": ["example3@domain.tld"],
+          "user": "notification",
+          "pass": "spring2018",
+          "server": "webmail.domain.tld",
+          "port": 587
+        },
+        "onSuccess": [{
+          "do": "move",
+          "config": {
+            "name": "/mnt/prod/Server/Archive/701/$file_%Y%m%d%H%M%S"
+          }
+        }],
+        "onFailure": [{
+          "do": "move",
+          "config": {
+            "name": "/mnt/prod/Server/Error/701/$file_%Y%m%d%H%M%S"
+          }
+        }]
       }]
+    }],
+    "onFailure": [{
+      "do": "move",
+      "config": {
+        "name": "/mnt/prod/Server/Error/701/$file_%Y%m%d%H%M%S"
+      }
     }]
   }]
 }]

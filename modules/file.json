@@ -1,3 +1,5 @@
 {
-  "name": "new_$file_%Y%m%d%H%M%S"
+  "name": "new_$file_%Y%m%d%H%M%S",
+  "minSize": "400B",
+  "maxSize": "5MB"
 }

@@ -11,10 +11,14 @@ import (
 
 	"simonwaldherr.de/go/golibs/file"
 	"simonwaldherr.de/go/golibs/xtime"
+
+	"github.com/c2h5oh/datasize"
 )
 
 type fileConfig struct {
-	Name string `json:"name"`
+	Name    string `json:"name"`
+	MinSize string `json:"minSize"`
+	MaxSize string `json:"maxSize"`
 }
 
 type baseFile struct{}
@@ -155,4 +159,36 @@ func (IsFile) Perform(config interface{}, fileName string) error {
 		return nil
 	}
 	return fmt.Errorf("\"%v\" does not exist anymore\n", fileName)
+}
+
+type CheckSize struct {
+	baseFile
+}
+
+func (CheckSize) Name() string {
+	return "checksize"
+}
+
+func (CheckSize) Perform(config interface{}, fileName string) error {
+	c := config.(*fileConfig)
+
+	if !file.IsFile(fileName) {
+		return fmt.Errorf("\"%v\" does not exist anymore\n", fileName)
+	}
+
+	var minSize datasize.ByteSize
+	var maxSize datasize.ByteSize
+
+	size, _ := file.Size(fileName)
+	usize := uint64(size)
+
+	if c.MinSize != "" && minSize.UnmarshalText([]byte(c.MinSize)).Bytes() > usize {
+		return fmt.Errorf("size of \"%v\" to small\n", fileName)
+	}
+
+	if c.MaxSize != "" && maxSize.UnmarshalText([]byte(c.MaxSize)).Bytes() < usize {
+		return fmt.Errorf("size of \"%v\" to big\n", fileName)
+	}
+
+	return nil
 }

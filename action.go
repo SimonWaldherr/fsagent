@@ -3,14 +3,15 @@ package fsagent
 import (
 	"encoding/json"
 	"log"
+	"time"
 
 	"github.com/SimonWaldherr/golibs/cachedfile"
-	"github.com/SimonWaldherr/golibs/file"
+	gfile "github.com/SimonWaldherr/golibs/file"
 	"simonwaldherr.de/go/fsagent/modules"
 )
 
 func init() {
-	cachedfile.Init()
+	cachedfile.Init(15*time.Minute, 1*time.Minute)
 }
 
 // Action is something that should be performed.
@@ -48,9 +49,9 @@ func do(act Action, file string) {
 		for _, action := range Actions {
 			if a.Do == action.Name() {
 				config := action.EmptyConfig()
-				if file.IsFile(a.Config) {
-					str, _ := cachedfile.Read(a.Config)
-					json.Unmarshal(str, &config)
+				if gfile.IsFile(string(a.Config)) {
+					str, _ := cachedfile.Read(string(a.Config))
+					json.Unmarshal([]byte(str), &config)
 				} else {
 					json.Unmarshal(a.Config, &config)
 				}
