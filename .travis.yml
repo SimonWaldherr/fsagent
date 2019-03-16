@@ -1,0 +1,10 @@
+language: go
+
+go:
+  - 1.11.x
+  - tip
+
+script:
+  - go get simonwaldherr.de/go/fsagent/cmd/fsagent
+  - go fmt simonwaldherr.de/go/fsagent/cmd/fsagent
+  - go build simonwaldherr.de/go/fsagent/cmd/fsagent
