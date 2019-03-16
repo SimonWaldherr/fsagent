@@ -181,12 +181,16 @@ func (CheckSize) Perform(config interface{}, fileName string) error {
 
 	size, _ := file.Size(fileName)
 	usize := uint64(size)
+	
+	minSize.UnmarshalText([]byte(c.MinSize))
 
-	if c.MinSize != "" && minSize.UnmarshalText([]byte(c.MinSize)).Bytes() > usize {
+	if c.MinSize != "" && minSize.Bytes() > usize {
 		return fmt.Errorf("size of \"%v\" to small\n", fileName)
 	}
+	
+	maxSize.UnmarshalText([]byte(c.MaxSize))
 
-	if c.MaxSize != "" && maxSize.UnmarshalText([]byte(c.MaxSize)).Bytes() < usize {
+	if c.MaxSize != "" && maxSize.Bytes() < usize {
 		return fmt.Errorf("size of \"%v\" to big\n", fileName)
 	}
 

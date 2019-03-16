@@ -1,5 +1,7 @@
 # fsagent
 
+[![Build Status](https://travis-ci.org/SimonWaldherr/fsagent.svg?branch=master)](https://travis-ci.org/SimonWaldherr/fsagent)  
+
 fsagent is a Golang Application to perform various standard actions triggered by various events. FSAgent is highly customizable.
 
 ## Name
