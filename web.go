@@ -8,8 +8,8 @@ import (
 
 var size int64 = 200 * 1024 * 1024
 
-func serveHTTP(fnChannel chan<- string) {
-	http.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
+func serveHTTP(conf Config, fnChannel chan<- string) {
+	http.HandleFunc(conf.Folder, func(w http.ResponseWriter, r *http.Request) {
 		var path string
 		if err := r.ParseMultipartForm(size); err != nil {
 			fmt.Println(err)
@@ -32,5 +32,5 @@ func serveHTTP(fnChannel chan<- string) {
 		fmt.Printf("File \"%v\" uploaded\n", path)
 	})
 	http.Handle("/", http.FileServer(http.Dir("./web/")))
-	fmt.Print(http.ListenAndServe(":8080", nil))
+	fmt.Print(http.ListenAndServe(conf.Port, nil))
 }

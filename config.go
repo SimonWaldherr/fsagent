@@ -17,6 +17,7 @@ import (
 // Config represents an element of the application configuration.
 type Config struct {
 	Folder   string `json:"folder"`
+	Port     string `json:"port"`
 	Trigger  string `json:"trigger"`
 	Ticker   int    `json:"ticker"`
 	Match    string `json:"match"`
@@ -46,7 +47,7 @@ func runConfig(wg *sync.WaitGroup, conf Config, i int, stop chan struct{}, watch
 		defer watcher[folderidx].Close()
 	case "http":
 		filenameChannel[folderidx] = make(chan string)
-		go serveHTTP(filenameChannel[folderidx])
+		go serveHTTP(conf, filenameChannel[folderidx])
 	case "ticker":
 		timer = time.NewTicker(time.Millisecond * time.Duration(conf.Ticker))
 	}

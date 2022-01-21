@@ -1,5 +1,7 @@
 [{
   "verbose": true,
+  "port": ":8080",
+  "folder": "/upload",
   "trigger": "http",
   "match": "^*$",
   "action": [{

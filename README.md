@@ -100,6 +100,7 @@ Trigger | Info
 --------|------
 fsevent | file system event based on [fsnotify](github.com/fsnotify/fsnotify)
 ticker  | checks for new files at a customizable frequency 
+http    | files can be uploaded via a web form
 
 ### Actions
 
