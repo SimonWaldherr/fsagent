@@ -1,0 +1,56 @@
+[{
+  "verbose": true,
+  "debounce": true,
+  "folder": "/mnt/prod/Server/Transfer/701/%Y/%m/%d/",
+  "trigger": "ticker",
+  "ticker": 2000,
+  "onlynew": false,
+  "match": "^[0-9]+\\.[Tt][Xx][Tt]$",
+  "action": [{
+    "do": "checksize",
+    "config": {
+      "minSize": "1MB",
+      "maxSize": "5MB"
+    },
+    "onSuccess": [{
+      "do": "sleep",
+      "config": {
+        "time": 500
+      },
+      "onSuccess": [{
+        "do": "mail",
+        "config": {
+          "name": "mail",
+          "subject": "Lorem Ipsum",
+          "body": "dolor sit amet",
+          "from": "notification@company.tld",
+          "to": ["example@domain.tld"],
+          "cc": ["example2@domain.tld"],
+          "bcc": ["example3@domain.tld"],
+          "user": "notification",
+          "pass": "spring2018",
+          "server": "webmail.domain.tld",
+          "port": 587
+        },
+        "onSuccess": [{
+          "do": "move",
+          "config": {
+            "name": "/mnt/prod/Server/Archive/701/$file_%Y%m%d%H%M%S"
+          }
+        }],
+        "onFailure": [{
+          "do": "move",
+          "config": {
+            "name": "/mnt/prod/Server/Error/701/$file_%Y%m%d%H%M%S"
+          }
+        }]
+      }]
+    }],
+    "onFailure": [{
+      "do": "move",
+      "config": {
+        "name": "/mnt/prod/Server/Error/701/$file_%Y%m%d%H%M%S"
+      }
+    }]
+  }]
+}]
