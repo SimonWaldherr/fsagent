@@ -1,0 +1,24 @@
+[{
+  "verbose": true,
+  "trigger": "http",
+  "match": "^*$",
+  "action": [{
+    "do": "checksize",
+    "config": {
+      "minSize": "1MB",
+      "maxSize": "5MB"
+    },
+    "onSuccess": [{
+      "do": "move",
+      "config": {
+        "name": "./ok_$file_%Y%m%d%H%M%S"
+      }
+    }],
+    "onFailure": [{
+      "do": "move",
+      "config": {
+        "name": "./error_$file_%Y%m%d%H%M%S"
+      }
+    }]
+  }]
+}]

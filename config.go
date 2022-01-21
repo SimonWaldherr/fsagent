@@ -29,6 +29,8 @@ type Config struct {
 func runConfig(wg *sync.WaitGroup, conf Config, i int, stop chan struct{}, watcher map[string]*fsnotify.Watcher) {
 	var timer *time.Ticker
 	var eventCache *cache.Cache
+	var filenameChannel map[string]chan string
+	filenameChannel = make(map[string]chan string)
 
 	fmt.Println("start loop ...")
 
@@ -42,7 +44,9 @@ func runConfig(wg *sync.WaitGroup, conf Config, i int, stop chan struct{}, watch
 	case "fsevent":
 		watcher[folderidx], _ = fsnotify.NewWatcher()
 		defer watcher[folderidx].Close()
-		fmt.Printf("Config FS-Watcher: %#v\n", watcher)
+	case "http":
+		filenameChannel[folderidx] = make(chan string)
+		go serveHTTP(filenameChannel[folderidx])
 	case "ticker":
 		timer = time.NewTicker(time.Millisecond * time.Duration(conf.Ticker))
 	}
@@ -56,7 +60,7 @@ func runConfig(wg *sync.WaitGroup, conf Config, i int, stop chan struct{}, watch
 		case "fsevent":
 			handleFsEvent(conf, eventCache, i, watcher)
 		case "http":
-			fmt.Println("coming soon.")
+			handleFile(conf, <-filenameChannel[folderidx])
 		case "ticker":
 			handleTicker(conf, eventCache, i, timer)
 		default:
@@ -116,5 +120,13 @@ func handleFsEvent(conf Config, eventCache *cache.Cache, i int, watcher map[stri
 		}
 	case err := <-watcher[conf.Folder+fmt.Sprintf(":%v", i)].Errors:
 		log.Println("error:", err)
+	}
+}
+
+func handleFile(conf Config, fileName string) {
+	fmt.Println("Event detected!")
+	match, _ := regex.MatchString(fileName, conf.Match)
+	if match {
+		do(conf.Action, fileName)
 	}
 }

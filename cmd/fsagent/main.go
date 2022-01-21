@@ -7,7 +7,6 @@ import (
 	"os/signal"
 
 	"github.com/kardianos/service"
-
 	"simonwaldherr.de/go/fsagent"
 )
 

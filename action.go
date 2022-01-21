@@ -7,6 +7,7 @@ import (
 
 	"github.com/SimonWaldherr/golibs/cachedfile"
 	gfile "github.com/SimonWaldherr/golibs/file"
+
 	"simonwaldherr.de/go/fsagent/modules"
 )
 
@@ -39,6 +40,7 @@ var Actions = []Actionable{
 	&modules.Decompress{},
 	&modules.Compress{},
 	&modules.IsFile{},
+	&modules.CheckSize{},
 }
 
 func do(act Action, file string) {
@@ -57,6 +59,9 @@ func do(act Action, file string) {
 				}
 
 				err = action.Perform(config, file)
+				if err != nil {
+					log.Printf("Error \"%v\" for file \"%v\"", err, file)
+				}
 				break
 			}
 		}
@@ -64,7 +69,7 @@ func do(act Action, file string) {
 		if err == nil {
 			do(a.Onsuccess, file)
 		} else {
-			log.Printf("Error on \"%v\" for file \"%v\"", err, file)
+			log.Printf("Error \"%v\" for file \"%v\"", err, file)
 			do(a.Onfailure, file)
 		}
 	}
