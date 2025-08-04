@@ -1,6 +1,6 @@
 # fsagent
 
-fsagent is a Golang Application to perform various standard actions triggered by various events. FSAgent is highly customizable.
+fsagent is a Golang Application to perform various standard actions triggered by various events. FSAgent is highly customizable. And there is a [blockly based editor](https://simonwaldherr.github.io/fsagent/), too.
 
 ## Name
 
