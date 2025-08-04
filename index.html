@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FSAgent Configuration Builder</title>
+    <meta name="description" content="Visueller Konfigurations-Generator für FSAgent - Drag & Drop Interface mit Blockly">
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="FSAgent Builder">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://simonwaldherr.github.io/fsagent/">
+    <meta property="og:title" content="FSAgent Configuration Builder">
+    <meta property="og:description" content="Visueller Konfigurations-Generator für FSAgent mit Blockly">
+    <meta property="og:image" content="https://simonwaldherr.github.io/fsagent/preview.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+    
+    <!-- Blockly CDN - Fixed versions for stability -->
+    <script src="https://unpkg.com/blockly@9.3.3/blockly_compressed.js"></script>
+    <script src="https://unpkg.com/blockly@9.3.3/blocks_compressed.js"></script>
+    <script src="https://unpkg.com/blockly@9.3.3/javascript_compressed.js"></script>
+    <script src="https://unpkg.com/blockly@9.3.3/msg/en.js"></script>
+    
+    <!-- Font Awesome für Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            font-weight: 300;
+        }
+        
+        .header .subtitle {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .github-link {
+            color: #2c3e50;
+            text-decoration: none;
+            font-size: 18px;
+            transition: color 0.3s;
+        }
+        
+        .github-link:hover {
+            color: #3498db;
+        }
+        
+        .container {
+            display: flex;
+            height: calc(100vh - 80px);
+        }
+        
+        .workspace-container {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            margin: 10px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .output-container {
+            width: 400px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            margin: 10px 10px 10px 0;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .output-header {
+            padding: 20px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .output-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            margin-bottom: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+        
+        .btn-success:hover {
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+        
+        .btn-warning:hover {
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .btn-danger:hover {
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+        
+        .output-section {
+            margin-bottom: 25px;
+        }
+        
+        .output-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .json-output {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 300px;
+            overflow-y: auto;
+            line-height: 1.4;
+        }
+        
+        .info-box {
+            background: #ebf3fd;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .info-box strong {
+            color: #2c3e50;
+        }
+        
+        .info-box p {
+            margin-bottom: 8px;
+        }
+        
+        .status-bar {
+            background: #ecf0f1;
+            padding: 8px 16px;
+            font-size: 12px;
+            color: #7f8c8d;
+            border-top: 1px solid #ddd;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .output-container {
+                width: auto;
+                height: 300px;
+                margin: 0 10px 10px 10px;
+            }
+            
+            .buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Dark Mode */
+        .dark-mode {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+        }
+        
+        .dark-mode .workspace-container,
+        .dark-mode .output-container {
+            background: rgba(44, 62, 80, 0.95);
+            color: #ecf0f1;
+        }
+        
+        .dark-mode .json-output {
+            background: #34495e;
+            color: #ecf0f1;
+            border-color: #7f8c8d;
+        }
+        
+        .dark-mode .info-box {
+            background: #34495e;
+            border-color: #7f8c8d;
+            color: #ecf0f1;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #000;
+        }
+        
+        .shortcut-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .shortcut-key {
+            background: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            border: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>FSAgent Configuration Builder</h1>
+            <div class="subtitle">Visueller Konfigurations-Generator mit Blockly</div>
+        </div>
+        <a href="https://github.com/SimonWaldherr/fsagent" class="github-link" target="_blank">
+            <i class="fab fa-github"></i>
+        </a>
+    </div>
+    
+    <div class="container">
+        <div class="workspace-container">
+            <div id="blocklyDiv" style="height: 100%; width: 100%;"></div>
+        </div>
+        
+        <div class="output-container">
+            <div class="output-header">
+                <div class="buttons">
+                    <button class="btn" onclick="generateConfig()">
+                        <i class="fas fa-cog"></i> Generieren
+                    </button>
+                    <button class="btn btn-success" onclick="downloadConfig()">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                    <button class="btn btn-warning" onclick="loadExample()">
+                        <i class="fas fa-lightbulb"></i> Beispiel
+                    </button>
+                    <button class="btn btn-danger" onclick="clearWorkspace()">
+                        <i class="fas fa-trash"></i> Löschen
+                    </button>
+                    <button class="btn" onclick="undo()">
+                        <i class="fas fa-undo"></i> Zurück
+                    </button>
+                    <button class="btn" onclick="redo()">
+                        <i class="fas fa-redo"></i> Vor
+                    </button>
+                    <button class="btn btn-success" id="autosave-btn" onclick="toggleAutoSave()">
+                        <i class="fas fa-save"></i> Auto-Save: ON
+                    </button>
+                    <button class="btn" onclick="toggleDarkMode()">
+                        <i class="fas fa-moon"></i> Dark
+                    </button>
+                    <button class="btn" onclick="importConfig()">
+                        <i class="fas fa-upload"></i> Import
+                    </button>
+                    <button class="btn" onclick="exportWorkspace()">
+                        <i class="fas fa-file-export"></i> Export
+                    </button>
+                    <button class="btn" onclick="showShortcuts()">
+                        <i class="fas fa-keyboard"></i> Shortcuts
+                    </button>
+                    <button class="btn" onclick="showHelp()">
+                        <i class="fas fa-question"></i> Hilfe
+                    </button>
+                </div>
+            </div>
+            
+            <div class="output-content">
+                <div class="output-section">
+                    <div class="output-title">
+                        <i class="fas fa-code"></i> Generierte Konfiguration
+                    </div>
+                    <div id="jsonOutput" class="json-output">
+Klicken Sie auf "Generieren" um die JSON-Konfiguration zu erstellen.
+
+Ziehen Sie FSAgent-Blöcke aus der Toolbox in den Workspace und konfigurieren Sie Ihre Automatisierung.
+                    </div>
+                </div>
+                
+                <div class="output-section">
+                    <div class="output-title">
+                        <i class="fas fa-info-circle"></i> Schnellanleitung
+                    </div>
+                    <div class="info-box">
+                        <p><strong>1.</strong> Ziehen Sie "FSAgent Job" Blöcke in den Workspace</p>
+                        <p><strong>2.</strong> Konfigurieren Sie Trigger (Dateievents, Timer, HTTP)</p>
+                        <p><strong>3.</strong> Fügen Sie Aktionen hinzu (Copy, Move, HTTP, etc.)</p>
+                        <p><strong>4.</strong> Verbinden Sie Success/Failure Flows</p>
+                        <p><strong>5.</strong> Generieren und laden Sie die config.json herunter</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="status-bar">
+                Ready • GitHub Pages Version • Keine Server-Verbindung erforderlich
+            </div>
+        </div>
+    </div>
+
+    <!-- Shortcuts Modal -->
+    <div id="shortcutsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('shortcutsModal')">&times;</span>
+            <h2><i class="fas fa-keyboard"></i> Keyboard Shortcuts</h2>
+            <div class="shortcut-grid">
+                <div class="shortcut-key">Ctrl/Cmd + S</div>
+                <div>Konfiguration herunterladen</div>
+                <div class="shortcut-key">Ctrl/Cmd + G</div>
+                <div>Konfiguration generieren</div>
+                <div class="shortcut-key">Ctrl/Cmd + E</div>
+                <div>Beispiel laden</div>
+                <div class="shortcut-key">Ctrl/Cmd + Z</div>
+                <div>Rückgängig</div>
+                <div class="shortcut-key">Ctrl/Cmd + Y</div>
+                <div>Wiederholen</div>
+                <div class="shortcut-key">Ctrl/Cmd + D</div>
+                <div>Dark Mode umschalten</div>
+                <div class="shortcut-key">Delete</div>
+                <div>Ausgewählte Blöcke löschen</div>
+                <div class="shortcut-key">Ctrl/Cmd + A</div>
+                <div>Alle Blöcke auswählen</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('helpModal')">&times;</span>
+            <h2><i class="fas fa-question-circle"></i> FSAgent Configuration Builder Hilfe</h2>
+            
+            <h3>🚀 Schnellstart</h3>
+            <ol>
+                <li>Ziehen Sie einen <strong>"FSAgent Job"</strong> Block in den Workspace</li>
+                <li>Konfigurieren Sie den Ordnerpfad und Pattern</li>
+                <li>Fügen Sie einen <strong>Trigger</strong> hinzu (Dateievents, Timer, HTTP)</li>
+                <li>Verbinden Sie <strong>Aktionen</strong> für die Dateiverarbeitung</li>
+                <li>Generieren und laden Sie die JSON-Konfiguration herunter</li>
+            </ol>
+            
+            <h3>📁 Verfügbare Module</h3>
+            <ul>
+                <li><strong>🤖 OpenAI:</strong> KI-gestützte Dateianalyse</li>
+                <li><strong>📢 Notifications:</strong> Slack, Discord, Teams Benachrichtigungen</li>
+                <li><strong>🗄️ Database:</strong> SQLite, MySQL, PostgreSQL Operationen</li>
+                <li><strong>🔧 File Processing:</strong> Hash, Metadaten, Duplikat-Erkennung</li>
+                <li><strong>📂 FTP/SFTP:</strong> Sicherer Dateitransfer</li>
+            </ul>
+            
+            <h3>💡 Tipps</h3>
+            <ul>
+                <li>Verwenden Sie <strong>Success/Failure Flows</strong> für robuste Workflows</li>
+                <li><strong>Auto-Save</strong> speichert Ihre Arbeit automatisch</li>
+                <li>Nutzen Sie <strong>Platzhalter</strong> wie $file, $filepath, $timestamp</li>
+                <li>Testen Sie Konfigurationen mit kleinen Dateien zuerst</li>
+            </ul>
+            
+            <h3>🔗 Links</h3>
+            <p>
+                <a href="https://github.com/SimonWaldherr/fsagent" target="_blank">📘 GitHub Repository</a><br>
+                <a href="https://github.com/SimonWaldherr/fsagent/blob/master/README.md" target="_blank">📚 Dokumentation</a><br>
+                <a href="https://github.com/SimonWaldherr/fsagent/issues" target="_blank">🐛 Issues & Support</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- File Input for Import -->
+    <input type="file" id="fileInput" accept=".json,.xml" style="display: none;" onchange="handleFileImport(event)">
+
+    <!-- Blockly Toolbox Definition -->
+    <xml xmlns="https://developers.google.com/blockly/xml" id="toolbox" style="display: none">
+        <category name="📁 FSAgent Jobs" colour="#3498db">
+            <block type="fsagent_job"></block>
+        </category>
+        <category name="⚡ Trigger" colour="#e74c3c">
+            <block type="trigger_fsevent"></block>
+            <block type="trigger_ticker"></block>
+            <block type="trigger_http"></block>
+        </category>
+        <category name="🎯 Basic Actions" colour="#27ae60">
+            <block type="action_copy"></block>
+            <block type="action_move"></block>
+            <block type="action_delete"></block>
+            <block type="action_http_post"></block>
+            <block type="action_sleep"></block>
+            <block type="action_mail"></block>
+        </category>
+        <category name="🚀 Advanced Actions" colour="#9b59b6">
+            <block type="action_openai"></block>
+            <block type="action_notification"></block>
+            <block type="action_database"></block>
+            <block type="action_fileprocessing"></block>
+            <block type="action_ftp"></block>
+        </category>
+    </xml>
+
+    <!-- Load external Blockly blocks and generators -->
+    <script src="blocks.js"></script>
+    <script src="generator.js"></script>
+    
+    <script>
+        let workspace;
+        let darkMode = false;
+        let autoSave = true;
+        let configHistory = [];
+        let currentHistoryIndex = -1;
+        
+        // PWA Installation
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            showInstallButton();
+        });
+        
+        function showInstallButton() {
+            const installBtn = document.createElement('button');
+            installBtn.className = 'btn';
+            installBtn.innerHTML = '<i class="fas fa-download"></i> App Installieren';
+            installBtn.onclick = installPWA;
+            document.querySelector('.buttons').appendChild(installBtn);
+        }
+        
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('PWA installation accepted');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+        
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                        updateStatusBar('Offline-Modus verfügbar');
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+        
+        function updateStatusBar(message) {
+            const statusBar = document.querySelector('.status-bar');
+            const timestamp = new Date().toLocaleTimeString();
+            statusBar.textContent = `${message} • ${timestamp}`;
+        }
+        
+        function initBlockly() {
+            // Load saved workspace if available
+            const savedWorkspace = localStorage.getItem('fsagent-workspace');
+            
+            workspace = Blockly.inject('blocklyDiv', {
+                toolbox: document.getElementById('toolbox'),
+                grid: {
+                    spacing: 20,
+                    length: 3,
+                    colour: '#ccc',
+                    snap: true
+                },
+                zoom: {
+                    controls: true,
+                    wheel: true,
+                    startScale: 0.8,
+                    maxScale: 3,
+                    minScale: 0.3,
+                    scaleSpeed: 1.2
+                },
+                trashcan: true,
+                sounds: false,
+                theme: Blockly.Themes.Modern
+            });
+            
+            // Auto-save and history tracking
+            workspace.addChangeListener(function(event) {
+                if (event.type === Blockly.Events.BLOCK_MOVE || 
+                    event.type === Blockly.Events.BLOCK_CHANGE ||
+                    event.type === Blockly.Events.BLOCK_CREATE ||
+                    event.type === Blockly.Events.BLOCK_DELETE) {
+                    
+                    if (autoSave) {
+                        saveWorkspace();
+                    }
+                    
+                    addToHistory();
+                    generateConfig();
+                }
+            });
+            
+            // Load saved workspace or example
+            if (savedWorkspace) {
+                try {
+                    const xml = Blockly.utils.xml.textToDom(savedWorkspace);
+                    Blockly.Xml.domToWorkspace(xml, workspace);
+                    updateStatusBar('Workspace geladen');
+                } catch (e) {
+                    console.error('Failed to load saved workspace:', e);
+                    loadExample();
+                }
+            } else {
+                setTimeout(loadExample, 500);
+            }
+            
+            updateStatusBar('Bereit');
+        }
+        
+        function saveWorkspace() {
+            const xml = Blockly.Xml.workspaceToDom(workspace);
+            const xmlText = Blockly.Xml.domToText(xml);
+            localStorage.setItem('fsagent-workspace', xmlText);
+        }
+        
+        function addToHistory() {
+            const xml = Blockly.Xml.workspaceToDom(workspace);
+            const xmlText = Blockly.Xml.domToText(xml);
+            
+            // Remove future history if we're not at the end
+            if (currentHistoryIndex < configHistory.length - 1) {
+                configHistory = configHistory.slice(0, currentHistoryIndex + 1);
+            }
+            
+            configHistory.push(xmlText);
+            if (configHistory.length > 50) { // Limit history
+                configHistory.shift();
+            } else {
+                currentHistoryIndex++;
+            }
+        }
+        
+        function undo() {
+            if (currentHistoryIndex > 0) {
+                currentHistoryIndex--;
+                const xml = Blockly.utils.xml.textToDom(configHistory[currentHistoryIndex]);
+                workspace.clear();
+                Blockly.Xml.domToWorkspace(xml, workspace);
+                updateStatusBar('Rückgängig');
+            }
+        }
+        
+        function redo() {
+            if (currentHistoryIndex < configHistory.length - 1) {
+                currentHistoryIndex++;
+                const xml = Blockly.utils.xml.textToDom(configHistory[currentHistoryIndex]);
+                workspace.clear();
+                Blockly.Xml.domToWorkspace(xml, workspace);
+                updateStatusBar('Wiederholen');
+            }
+        }
+        
+        function toggleDarkMode() {
+            darkMode = !darkMode;
+            document.body.classList.toggle('dark-mode', darkMode);
+            localStorage.setItem('fsagent-darkmode', darkMode);
+            updateStatusBar(darkMode ? 'Dark Mode aktiviert' : 'Light Mode aktiviert');
+        }
+        
+        function toggleAutoSave() {
+            autoSave = !autoSave;
+            const btn = document.getElementById('autosave-btn');
+            btn.innerHTML = autoSave ? 
+                '<i class="fas fa-save"></i> Auto-Save: ON' : 
+                '<i class="fas fa-save"></i> Auto-Save: OFF';
+            btn.className = autoSave ? 'btn btn-success' : 'btn';
+            localStorage.setItem('fsagent-autosave', autoSave);
+            updateStatusBar(`Auto-Save ${autoSave ? 'aktiviert' : 'deaktiviert'}`);
+        }
+        
+        function generateConfig() {
+            try {
+                // Use custom generator instead of standard Blockly JavaScript
+                const config = FSAgentGenerator.workspaceToCode(workspace);
+                
+                if (!config.trim() || config === '[]') {
+                    document.getElementById('jsonOutput').textContent = 
+                        'Workspace ist leer.\n\nZiehen Sie Blöcke aus der Toolbox oder laden Sie ein Beispiel.';
+                    return;
+                }
+                
+                // Parse the JSON to validate and count jobs
+                const parsedConfig = JSON.parse(config);
+                const jobCount = Array.isArray(parsedConfig) ? parsedConfig.length : Object.keys(parsedConfig).length;
+                
+                document.getElementById('jsonOutput').textContent = config;
+                updateStatusBar(`Konfiguration generiert • ${jobCount} Jobs`);
+                
+                // Validate config
+                if (Array.isArray(parsedConfig)) {
+                    validateConfigArray(parsedConfig);
+                } else {
+                    validateConfig(parsedConfig);
+                }
+                
+            } catch (error) {
+                document.getElementById('jsonOutput').textContent = 
+                    'Fehler beim Generieren der Konfiguration:\n\n' + error.message + 
+                    '\n\nBitte überprüfen Sie Ihre Blockly-Konfiguration.';
+                
+                console.error('Generation error:', error);
+                updateStatusBar('Fehler bei Generierung');
+            }
+        }
+        
+        function validateConfigArray(configArray) {
+            const warnings = [];
+            
+            configArray.forEach((job, index) => {
+                if (!job.folder) warnings.push(`Job ${index + 1}: Kein Ordner definiert`);
+                if (!job.trigger) warnings.push(`Job ${index + 1}: Kein Trigger definiert`);
+                if (!job.actions || job.actions.length === 0) {
+                    warnings.push(`Job ${index + 1}: Keine Aktionen definiert`);
+                }
+            });
+            
+            if (warnings.length > 0) {
+                updateStatusBar(`${warnings.length} Warnungen gefunden`);
+                console.warn('Config warnings:', warnings);
+            }
+        }
+        
+        function validateConfig(config) {
+            const warnings = [];
+            
+            Object.entries(config).forEach(([jobName, job]) => {
+                if (!job.folder) warnings.push(`${jobName}: Kein Ordner definiert`);
+                if (!job.trigger) warnings.push(`${jobName}: Kein Trigger definiert`);
+                if (!job.actions || job.actions.length === 0) {
+                    warnings.push(`${jobName}: Keine Aktionen definiert`);
+                }
+            });
+            
+            if (warnings.length > 0) {
+                updateStatusBar(`${warnings.length} Warnungen gefunden`);
+                console.warn('Config warnings:', warnings);
+            }
+        }
+        
+        function downloadConfig() {
+            try {
+                const config = FSAgentGenerator.workspaceToCode(workspace);
+                
+                if (!config.trim() || config === '[]') {
+                    alert('Keine Konfiguration zum Herunterladen verfügbar. Erstellen Sie zuerst eine Konfiguration.');
+                    return;
+                }
+                
+                const dataBlob = new Blob([config], {type: 'application/json'});
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                
+                // Generate filename with timestamp
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                link.download = `fsagent-config-${timestamp}.json`;
+                
+                link.click();
+                updateStatusBar('Konfiguration heruntergeladen');
+                
+                // Track in analytics (if available)
+                if (typeof gtag !== 'undefined') {
+                    gtag('event', 'download', {
+                        'event_category': 'config',
+                        'event_label': 'json_download'
+                    });
+                }
+                
+            } catch (error) {
+                alert('Fehler beim Download: ' + error.message);
+                updateStatusBar('Download fehlgeschlagen');
+            }
+        }
+        
+        function loadExample() {
+            const exampleXml = `<xml xmlns="https://developers.google.com/blockly/xml">
+                <block type="fsagent_job" x="50" y="50">
+                    <field name="NAME">demo_workflow</field>
+                    <field name="FOLDER">/tmp/incoming</field>
+                    <statement name="TRIGGER">
+                        <block type="trigger_fsevent">
+                            <field name="EVENTS">create,write</field>
+                        </block>
+                    </statement>
+                    <statement name="ACTIONS">
+                        <block type="action_openai">
+                            <field name="API_KEY">your-openai-api-key</field>
+                            <field name="MODEL">gpt-4</field>
+                            <field name="TASK">analyze</field>
+                            <field name="PROMPT">Analysiere diese Datei und erstelle eine Zusammenfassung</field>
+                            <statement name="ON_SUCCESS">
+                                <block type="action_notification">
+                                    <field name="PLATFORM">slack</field>
+                                    <field name="WEBHOOK">https://hooks.slack.com/your-webhook</field>
+                                    <field name="MESSAGE">✅ Datei analysiert: $file</field>
+                                    <statement name="ON_SUCCESS">
+                                        <block type="action_move">
+                                            <field name="DESTINATION">/tmp/processed/$file</field>
+                                        </block>
+                                    </statement>
+                                </block>
+                            </statement>
+                            <statement name="ON_FAILURE">
+                                <block type="action_move">
+                                    <field name="DESTINATION">/tmp/error/$file</field>
+                                </block>
+                            </statement>
+                        </block>
+                    </statement>
+                </block>
+            </xml>`;
+            
+            workspace.clear();
+            Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(exampleXml), workspace);
+            
+            updateStatusBar('Beispiel geladen');
+        }
+        
+        function clearWorkspace() {
+            if (confirm('Sind Sie sicher, dass Sie den Workspace löschen möchten?')) {
+                workspace.clear();
+                document.getElementById('jsonOutput').textContent = 
+                    'Workspace wurde geleert.\n\nLaden Sie ein Beispiel oder erstellen Sie eine neue Konfiguration.';
+                
+                updateStatusBar('Workspace geleert');
+            }
+        }
+        
+        function importConfig() {
+            document.getElementById('fileInput').click();
+        }
+        
+        function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    
+                    if (file.name.endsWith('.json')) {
+                        // JSON config import - convert to blocks (simplified)
+                        const config = JSON.parse(content);
+                        updateStatusBar(`JSON-Konfiguration importiert: ${Object.keys(config).length} Jobs`);
+                        document.getElementById('jsonOutput').textContent = JSON.stringify(config, null, 2);
+                    } else if (file.name.endsWith('.xml')) {
+                        // XML workspace import
+                        const xml = Blockly.utils.xml.textToDom(content);
+                        workspace.clear();
+                        Blockly.Xml.domToWorkspace(xml, workspace);
+                        updateStatusBar('Workspace importiert');
+                        saveWorkspace();
+                    }
+                } catch (error) {
+                    alert('Fehler beim Importieren: ' + error.message);
+                    updateStatusBar('Import fehlgeschlagen');
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function exportWorkspace() {
+            const xml = Blockly.Xml.workspaceToDom(workspace);
+            const xmlText = Blockly.Xml.domToText(xml);
+            
+            const dataBlob = new Blob([xmlText], {type: 'application/xml'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            link.download = `fsagent-workspace-${timestamp}.xml`;
+            
+            link.click();
+            updateStatusBar('Workspace exportiert');
+        }
+        
+        function showShortcuts() {
+            document.getElementById('shortcutsModal').style.display = 'block';
+        }
+        
+        function showHelp() {
+            document.getElementById('helpModal').style.display = 'block';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // Initialize settings from localStorage
+        function initSettings() {
+            // Dark mode
+            const savedDarkMode = localStorage.getItem('fsagent-darkmode');
+            if (savedDarkMode === 'true') {
+                darkMode = true;
+                document.body.classList.add('dark-mode');
+            }
+            
+            // Auto-save
+            const savedAutoSave = localStorage.getItem('fsagent-autosave');
+            if (savedAutoSave === 'false') {
+                autoSave = false;
+                toggleAutoSave(); // Update button state
+            }
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            initSettings();
+            initBlockly();
+        });
+        
+        // Enhanced keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 's':
+                        e.preventDefault();
+                        downloadConfig();
+                        break;
+                    case 'g':
+                        e.preventDefault();
+                        generateConfig();
+                        break;
+                    case 'e':
+                        e.preventDefault();
+                        loadExample();
+                        break;
+                    case 'z':
+                        e.preventDefault();
+                        undo();
+                        break;
+                    case 'y':
+                        e.preventDefault();
+                        redo();
+                        break;
+                    case 'd':
+                        e.preventDefault();
+                        toggleDarkMode();
+                        break;
+                    case 'i':
+                        e.preventDefault();
+                        importConfig();
+                        break;
+                    case 'h':
+                        e.preventDefault();
+                        showHelp();
+                        break;
+                }
+            } else if (e.key === 'F1') {
+                e.preventDefault();
+                showHelp();
+            } else if (e.key === 'Escape') {
+                // Close any open modals
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.style.display = 'none';
+                });
+            }
+        });
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            document.querySelectorAll('.modal').forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+        
+        // Prevent accidental page leave
+        window.addEventListener('beforeunload', function(e) {
+            if (workspace && workspace.getAllBlocks().length > 0) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    </script>
+</body>
+</html>
