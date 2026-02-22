@@ -1,0 +1,8 @@
+{
+  "url": "http://localhost:8080/api/v1/dags/example-dag/dagRuns",
+  "dagId": "example-dag",
+  "headers": {
+    "Authorization": "Bearer $DAG_TOKEN"
+  },
+  "timeout": 60
+}

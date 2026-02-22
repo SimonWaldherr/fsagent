@@ -116,6 +116,8 @@ Webhook    | sends file content to external webhook/API interfaces
 OpenAI     | sends file content to OpenAI chat completion APIs
 LMStudio   | sends file content to LM Studio OpenAI-compatible APIs
 Ollama     | sends file content to Ollama for local LLM workflows
+RAG        | runs retrieval-augmented prompts with additional context files
+DAG        | triggers DAG/workflow orchestrators with file-based run payloads
 SendMail   | sends the file as mail attachment
 Sleep      | waits for a specified duration
 

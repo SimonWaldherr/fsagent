@@ -38,6 +38,8 @@ var Actions = []Actionable{
 	&modules.OpenAI{},
 	&modules.LMStudio{},
 	&modules.Ollama{},
+	&modules.RAG{},
+	&modules.DAG{},
 	&modules.Sleep{},
 	&modules.Delete{},
 	&modules.Move{},

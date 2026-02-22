@@ -1,0 +1,12 @@
+{
+  "url": "http://localhost:1234/v1/chat/completions",
+  "model": "local-model",
+  "prompt": "Answer based on provided context and file content.",
+  "systemPrompt": "Use context first. Be concise.",
+  "contextFiles": [
+    "/path/to/context-1.txt",
+    "/path/to/context-2.txt"
+  ],
+  "output": "$file.rag.txt",
+  "timeout": 60
+}

@@ -1,6 +1,7 @@
 package modules
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -75,5 +76,83 @@ func TestWebhookPerform(t *testing.T) {
 	}
 	if !strings.Contains(received, "payload") || !strings.Contains(received, "in.txt") {
 		t.Fatalf("unexpected webhook body: %v", received)
+	}
+}
+
+func TestRAGPerformIncludesContext(t *testing.T) {
+	dir := t.TempDir()
+	in := dir + "/in.txt"
+	context := dir + "/context.txt"
+
+	if err := os.WriteFile(in, []byte("question"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(context, []byte("retrieved facts"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	var requestBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		requestBody = string(b)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"choices":[{"message":{"content":"rag-result"}}]}`))
+	}))
+	defer server.Close()
+
+	rag := RAG{}
+	err := rag.Perform(&ragConfig{
+		URL:          server.URL,
+		Model:        "model",
+		Prompt:       "answer",
+		ContextFiles: []string{context},
+		Output:       "$file.rag.out",
+	}, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(requestBody, "retrieved facts") {
+		t.Fatalf("context not included in request body: %s", requestBody)
+	}
+	out, err := os.ReadFile(in + ".rag.out")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(string(out)) != "rag-result" {
+		t.Fatalf("unexpected rag output: %s", out)
+	}
+}
+
+func TestDAGPerform(t *testing.T) {
+	dir := t.TempDir()
+	in := dir + "/in.txt"
+	if err := os.WriteFile(in, []byte("dag-payload"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	var payload map[string]interface{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(b, &payload)
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer server.Close()
+
+	dag := DAG{}
+	err := dag.Perform(&dagConfig{
+		URL:   server.URL,
+		DagID: "example-dag",
+	}, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if payload["dag_id"] != "example-dag" {
+		t.Fatalf("unexpected dag id: %v", payload["dag_id"])
+	}
+	conf, ok := payload["conf"].(map[string]interface{})
+	if !ok || conf["filename"] != in || conf["content"] != "dag-payload" {
+		t.Fatalf("unexpected conf payload: %#v", payload["conf"])
 	}
 }
