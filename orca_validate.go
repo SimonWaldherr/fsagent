@@ -48,10 +48,6 @@ func ValidateWorkflow(spec WorkflowSpec) error {
 }
 
 func validateToolPolicy(n WorkflowNode) error {
-	if len(n.Config) == 0 {
-		n.Config = json.RawMessage(`{}`)
-	}
-
 	switch strings.ToLower(n.Tool) {
 	case "http", "webhook":
 		var c struct {
@@ -85,6 +81,9 @@ func validateToolPolicy(n WorkflowNode) error {
 		q := strings.TrimSpace(strings.ToLower(c.Query + " " + c.SQL))
 		if q != "" && !strings.HasPrefix(q, "select ") {
 			return fmt.Errorf("only read-only SQL statements are allowed")
+		}
+		if strings.Contains(q, ";") || strings.Contains(q, "--") || strings.Contains(q, "/*") {
+			return fmt.Errorf("multi-statement and commented SQL is not allowed")
 		}
 	case "move", "copy", "delete", "decompress", "compress":
 		var cfg map[string]interface{}

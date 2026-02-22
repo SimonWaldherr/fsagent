@@ -4,6 +4,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -29,7 +30,9 @@ func registerOrcaHandlers(conf Config) {
 				return
 			}
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.Write(b)
+			if _, err := w.Write(b); err != nil {
+				log.Printf("could not write /orca response: %v", err)
+			}
 		})
 
 		http.HandleFunc("/api/orca/workflows", func(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +44,10 @@ func registerOrcaHandlers(conf Config) {
 					return
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"ids": ids})
+				if err := json.NewEncoder(w).Encode(map[string]interface{}{"ids": ids}); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			case http.MethodPost:
 				var spec WorkflowSpec
 				if err := json.NewDecoder(r.Body).Decode(&spec); err != nil {
@@ -82,7 +88,10 @@ func registerOrcaHandlers(conf Config) {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(spec)
+			if err := json.NewEncoder(w).Encode(spec); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		})
 
 		http.HandleFunc("/api/orca/workflows/", func(w http.ResponseWriter, r *http.Request) {
@@ -105,13 +114,22 @@ func registerOrcaHandlers(conf Config) {
 					return
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(machine)
+				if err := json.NewEncoder(w).Encode(machine); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			case "mermaid":
 				w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-				fmt.Fprint(w, spec.ToMermaid())
+				if _, err := fmt.Fprint(w, spec.ToMermaid()); err != nil {
+					log.Printf("could not write mermaid response: %v", err)
+					return
+				}
 			default:
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(spec)
+				if err := json.NewEncoder(w).Encode(spec); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			}
 		})
 	})

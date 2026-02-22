@@ -58,7 +58,7 @@
           const depRaw = b.getFieldValue('DEP') || '';
           const dependsOn = depRaw.split(',').map(x => x.trim()).filter(Boolean);
           let cfg = {};
-          try { cfg = JSON.parse(b.getFieldValue('CFG') || '{}'); } catch (_) {}
+          try { cfg = JSON.parse(b.getFieldValue('CFG') || '{}'); } catch (e) { console.error(e); document.getElementById('out').value = 'Config JSON parse error in node ' + id + ': ' + e.message; }
           nodes.push({ id, tool, dependsOn, config: cfg });
           b = b.getNextBlock();
         }

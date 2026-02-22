@@ -22,8 +22,8 @@ type WorkflowNode struct {
 type MachineAction struct {
 	Do        string          `json:"do"`
 	Config    json.RawMessage `json:"config"`
-	Onsuccess []MachineAction `json:"onSuccess"`
-	Onfailure []MachineAction `json:"onFailure"`
+	OnSuccess []MachineAction `json:"onSuccess"`
+	OnFailure []MachineAction `json:"onFailure"`
 }
 
 func (w WorkflowSpec) ToMermaid() string {

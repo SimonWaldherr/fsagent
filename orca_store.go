@@ -10,6 +10,7 @@ import (
 )
 
 var safeID = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
+var safeHex = regexp.MustCompile(`^[0-9a-f]+$`)
 
 type WorkflowStore interface {
 	Save(WorkflowSpec) error
@@ -45,8 +46,13 @@ func (s SQLiteStore) Save(spec WorkflowSpec) error {
 		return err
 	}
 	graphHex := hex.EncodeToString(graph)
-	name := strings.Replace(spec.Name, "'", "''", -1)
-	sql := fmt.Sprintf("INSERT OR REPLACE INTO workflows (id, name, graph_hex) VALUES ('%s','%s','%s');", spec.ID, name, graphHex)
+	if !safeHex.MatchString(graphHex) {
+		return fmt.Errorf("invalid graph encoding")
+	}
+	sql := fmt.Sprintf(
+		"INSERT OR REPLACE INTO workflows (id, name, graph_hex) VALUES (%s,%s,%s);",
+		sqlQuote(spec.ID), sqlQuote(spec.Name), sqlQuote(graphHex),
+	)
 	_, err = exec.Command("sqlite3", s.Path, sql).CombinedOutput()
 	return err
 }
@@ -58,7 +64,7 @@ func (s SQLiteStore) Get(id string) (WorkflowSpec, error) {
 	if !safeID.MatchString(id) {
 		return WorkflowSpec{}, fmt.Errorf("workflow id contains unsafe characters")
 	}
-	out, err := exec.Command("sqlite3", s.Path, "-line", fmt.Sprintf("SELECT graph_hex FROM workflows WHERE id = '%s' LIMIT 1;", id)).CombinedOutput()
+	out, err := exec.Command("sqlite3", s.Path, "-line", fmt.Sprintf("SELECT graph_hex FROM workflows WHERE id = %s LIMIT 1;", sqlQuote(id))).CombinedOutput()
 	if err != nil {
 		return WorkflowSpec{}, err
 	}
@@ -71,6 +77,9 @@ func (s SQLiteStore) Get(id string) (WorkflowSpec, error) {
 		return WorkflowSpec{}, fmt.Errorf("invalid sqlite response")
 	}
 	graphHex := strings.TrimSpace(parts[1])
+	if !safeHex.MatchString(graphHex) {
+		return WorkflowSpec{}, fmt.Errorf("invalid graph encoding")
+	}
 	b, err := hex.DecodeString(graphHex)
 	if err != nil {
 		return WorkflowSpec{}, err
@@ -99,4 +108,8 @@ func (s SQLiteStore) List() ([]string, error) {
 		}
 	}
 	return list, nil
+}
+
+func sqlQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
 }
