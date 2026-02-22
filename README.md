@@ -100,6 +100,9 @@ fsevent | file system event based on [fsnotify](github.com/fsnotify/fsnotify)
 ticker  | checks for new files at a customizable frequency 
 http    | files can be uploaded via a web form
 
+When using the `http` trigger, FSAgent now also serves an embedded ORCA editor at `/orca` with workflow APIs at `/api/orca/workflows`.
+Set `"workflowDB": "orca.sqlite"` in the HTTP config to persist graph workflows in SQLite.
+
 ### Actions
 
 There are some ready-made actions, but you can easily create others yourself.

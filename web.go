@@ -9,6 +9,7 @@ import (
 var size int64 = 200 * 1024 * 1024
 
 func serveHTTP(conf Config, fnChannel chan<- string) {
+	registerOrcaHandlers(conf)
 	http.HandleFunc(conf.Folder, func(w http.ResponseWriter, r *http.Request) {
 		var path string
 		if err := r.ParseMultipartForm(size); err != nil {

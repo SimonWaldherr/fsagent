@@ -16,15 +16,16 @@ import (
 
 // Config represents an element of the application configuration.
 type Config struct {
-	Folder   string `json:"folder"`
-	Port     string `json:"port"`
-	Trigger  string `json:"trigger"`
-	Ticker   int    `json:"ticker"`
-	Match    string `json:"match"`
-	Action   Action `json:"action"`
-	OnlyNew  bool   `json:"onlynew"`
-	Verbose  bool   `json:"verbose"`
-	Debounce bool   `json:"debounce"`
+	Folder     string `json:"folder"`
+	Port       string `json:"port"`
+	Trigger    string `json:"trigger"`
+	Ticker     int    `json:"ticker"`
+	Match      string `json:"match"`
+	Action     Action `json:"action"`
+	OnlyNew    bool   `json:"onlynew"`
+	Verbose    bool   `json:"verbose"`
+	Debounce   bool   `json:"debounce"`
+	WorkflowDB string `json:"workflowDB"`
 }
 
 func runConfig(wg *sync.WaitGroup, conf Config, i int, stop chan struct{}, watcher map[string]*fsnotify.Watcher) {
