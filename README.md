@@ -112,6 +112,10 @@ Move       | moves a file to a new location
 Decompress | decompresses a file
 Compress   | compresses a file
 HttpPostR. | sends the content of a file in a HTTP Post Request Body
+Webhook    | sends file content to external webhook/API interfaces
+OpenAI     | sends file content to OpenAI chat completion APIs
+LMStudio   | sends file content to LM Studio OpenAI-compatible APIs
+Ollama     | sends file content to Ollama for local LLM workflows
 SendMail   | sends the file as mail attachment
 Sleep      | waits for a specified duration
 

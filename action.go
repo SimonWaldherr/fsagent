@@ -34,6 +34,10 @@ type Actionable interface {
 var Actions = []Actionable{
 	&modules.Mail{},
 	&modules.HTTP{},
+	&modules.Webhook{},
+	&modules.OpenAI{},
+	&modules.LMStudio{},
+	&modules.Ollama{},
 	&modules.Sleep{},
 	&modules.Delete{},
 	&modules.Move{},

@@ -1,0 +1,7 @@
+{
+  "url": "http://localhost:11434/api/generate",
+  "model": "llama3.2",
+  "prompt": "Summarize this file:",
+  "output": "$file.ollama.txt",
+  "timeout": 60
+}
