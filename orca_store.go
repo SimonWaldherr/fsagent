@@ -11,6 +11,7 @@ import (
 
 var safeID = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
 var safeHex = regexp.MustCompile(`^[0-9a-f]+$`)
+var safePath = regexp.MustCompile(`^[a-zA-Z0-9_./\-]+$`)
 
 type WorkflowStore interface {
 	Save(WorkflowSpec) error
@@ -25,6 +26,9 @@ type SQLiteStore struct {
 func (s SQLiteStore) ensure() error {
 	if s.Path == "" {
 		return fmt.Errorf("sqlite path is empty")
+	}
+	if !safePath.MatchString(s.Path) {
+		return fmt.Errorf("sqlite path contains unsafe characters")
 	}
 	_, err := exec.LookPath("sqlite3")
 	if err != nil {

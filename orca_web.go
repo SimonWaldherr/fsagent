@@ -15,6 +15,10 @@ var orcaAssets embed.FS
 
 var orcaOnce sync.Once
 
+type workflowListResponse struct {
+	IDs []string `json:"ids"`
+}
+
 func registerOrcaHandlers(conf Config) {
 	orcaOnce.Do(func() {
 		dbPath := conf.WorkflowDB
@@ -44,8 +48,8 @@ func registerOrcaHandlers(conf Config) {
 					return
 				}
 				w.Header().Set("Content-Type", "application/json")
-				if err := json.NewEncoder(w).Encode(map[string]interface{}{"ids": ids}); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+				if err := json.NewEncoder(w).Encode(workflowListResponse{IDs: ids}); err != nil {
+					log.Printf("could not encode workflow list response: %v", err)
 					return
 				}
 			case http.MethodPost:
@@ -89,7 +93,7 @@ func registerOrcaHandlers(conf Config) {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			if err := json.NewEncoder(w).Encode(spec); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Printf("could not encode machine-to-graph response: %v", err)
 				return
 			}
 		})
@@ -115,7 +119,7 @@ func registerOrcaHandlers(conf Config) {
 				}
 				w.Header().Set("Content-Type", "application/json")
 				if err := json.NewEncoder(w).Encode(machine); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					log.Printf("could not encode machine export response: %v", err)
 					return
 				}
 			case "mermaid":
@@ -127,7 +131,7 @@ func registerOrcaHandlers(conf Config) {
 			default:
 				w.Header().Set("Content-Type", "application/json")
 				if err := json.NewEncoder(w).Encode(spec); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					log.Printf("could not encode workflow response: %v", err)
 					return
 				}
 			}
