@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -56,7 +57,7 @@ func llmOutputFile(fileName, output string) string {
 }
 
 func callOpenAICompatible(url string, c *llmConfig, fileName string) error {
-	fileContent, err := ioutil.ReadFile(fileName)
+	fileContent, err := os.ReadFile(fileName)
 	if err != nil {
 		return err
 	}
@@ -122,7 +123,7 @@ func callOpenAICompatible(url string, c *llmConfig, fileName string) error {
 		return fmt.Errorf("llm request failed with status %v", rsp.StatusCode)
 	}
 
-	b, err := ioutil.ReadAll(rsp.Body)
+	b, err := io.ReadAll(rsp.Body)
 	if err != nil {
 		return err
 	}
@@ -135,7 +136,7 @@ func callOpenAICompatible(url string, c *llmConfig, fileName string) error {
 		return fmt.Errorf("llm response was empty")
 	}
 
-	return ioutil.WriteFile(llmOutputFile(fileName, c.Output), []byte(parsed.Choices[0].Message.Content), 0600)
+	return os.WriteFile(llmOutputFile(fileName, c.Output), []byte(parsed.Choices[0].Message.Content), 0600)
 }
 
 func (OpenAI) Perform(config interface{}, fileName string) error {
@@ -163,7 +164,7 @@ func (Ollama) Perform(config interface{}, fileName string) error {
 		url = "http://localhost:11434/api/generate"
 	}
 
-	fileContent, err := ioutil.ReadFile(fileName)
+	fileContent, err := os.ReadFile(fileName)
 	if err != nil {
 		return err
 	}
@@ -205,7 +206,7 @@ func (Ollama) Perform(config interface{}, fileName string) error {
 		return fmt.Errorf("ollama request failed with status %v", rsp.StatusCode)
 	}
 
-	b, err := ioutil.ReadAll(rsp.Body)
+	b, err := io.ReadAll(rsp.Body)
 	if err != nil {
 		return err
 	}
@@ -221,5 +222,5 @@ func (Ollama) Perform(config interface{}, fileName string) error {
 		return fmt.Errorf("ollama response was empty")
 	}
 
-	return ioutil.WriteFile(llmOutputFile(fileName, c.Output), []byte(parsed.Response), 0600)
+	return os.WriteFile(llmOutputFile(fileName, c.Output), []byte(parsed.Response), 0600)
 }

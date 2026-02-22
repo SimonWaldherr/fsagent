@@ -3,7 +3,7 @@
   "method": "POST",
   "contentType": "application/json",
   "headers": {
-    "Authorization": "Bearer token"
+    "Authorization": "Bearer $WEBHOOK_TOKEN"
   },
   "body": "{\"filename\":\"$filename\",\"content\":\"$filecontent\"}",
   "timeout": 60

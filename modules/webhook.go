@@ -3,8 +3,8 @@ package modules
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -34,7 +34,7 @@ func (Webhook) Perform(config interface{}, fileName string) error {
 		return fmt.Errorf("url missing")
 	}
 
-	content, err := ioutil.ReadFile(fileName)
+	content, err := os.ReadFile(fileName)
 	if err != nil {
 		return err
 	}

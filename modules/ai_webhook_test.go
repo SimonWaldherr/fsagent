@@ -1,7 +1,7 @@
 package modules
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -21,7 +21,7 @@ func TestLLMOutputFile(t *testing.T) {
 func TestCallOpenAICompatible(t *testing.T) {
 	dir := t.TempDir()
 	in := dir + "/in.txt"
-	if err := ioutil.WriteFile(in, []byte("hello"), 0600); err != nil {
+	if err := os.WriteFile(in, []byte("hello"), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -41,7 +41,7 @@ func TestCallOpenAICompatible(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	out, err := ioutil.ReadFile(in + ".result")
+	out, err := os.ReadFile(in + ".result")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +59,7 @@ func TestWebhookPerform(t *testing.T) {
 
 	var received string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		b, _ := ioutil.ReadAll(r.Body)
+		b, _ := io.ReadAll(r.Body)
 		received = string(b)
 		w.WriteHeader(http.StatusOK)
 	}))

@@ -2,7 +2,7 @@
   "model": "gpt-4o-mini",
   "prompt": "Summarize this file:",
   "systemPrompt": "You are a precise assistant.",
-  "apiKey": "sk-...",
+  "apiKey": "$OPENAI_API_KEY",
   "output": "$file.openai.txt",
   "timeout": 60
 }
