@@ -49,6 +49,9 @@ func runConfig(wg *sync.WaitGroup, conf Config, i int, stop chan struct{}, watch
 	case "http":
 		filenameChannel[folderidx] = make(chan string)
 		go serveHTTP(conf, filenameChannel[folderidx])
+	case "mail", "irc":
+		filenameChannel[folderidx] = make(chan string)
+		go serveInboundHTTP(conf, filenameChannel[folderidx], conf.Trigger)
 	case "ticker":
 		timer = time.NewTicker(time.Millisecond * time.Duration(conf.Ticker))
 	}
@@ -62,6 +65,8 @@ func runConfig(wg *sync.WaitGroup, conf Config, i int, stop chan struct{}, watch
 		case "fsevent":
 			handleFsEvent(conf, eventCache, i, watcher)
 		case "http":
+			handleFile(conf, <-filenameChannel[folderidx])
+		case "mail", "irc":
 			handleFile(conf, <-filenameChannel[folderidx])
 		case "ticker":
 			handleTicker(conf, eventCache, i, timer)

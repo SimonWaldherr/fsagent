@@ -99,6 +99,8 @@ Trigger | Info
 fsevent | file system event based on [fsnotify](github.com/fsnotify/fsnotify)
 ticker  | checks for new files at a customizable frequency 
 http    | files can be uploaded via a web form
+mail    | receives raw mail payloads via HTTP POST and forwards them as files
+irc     | receives raw IRC message payloads via HTTP POST and forwards them as files
 
 When using the `http` trigger, FSAgent now also serves an embedded ORCA editor at `/orca` with workflow APIs at `/api/orca/workflows`.
 Set `"workflowDB": "orca.sqlite"` in the HTTP config to persist graph workflows in SQLite.
@@ -121,6 +123,7 @@ LMStudio   | sends file content to LM Studio OpenAI-compatible APIs
 Ollama     | sends file content to Ollama for local LLM workflows
 RAG        | runs retrieval-augmented prompts with additional context files
 DAG        | triggers DAG/workflow orchestrators with file-based run payloads
+DBWrite    | writes filename and content into a SQLite table
 SendMail   | sends the file as mail attachment
 Sleep      | waits for a specified duration
 

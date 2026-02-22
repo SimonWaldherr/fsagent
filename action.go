@@ -40,6 +40,7 @@ var Actions = []Actionable{
 	&modules.Ollama{},
 	&modules.RAG{},
 	&modules.DAG{},
+	&modules.DBWrite{},
 	&modules.Sleep{},
 	&modules.Delete{},
 	&modules.Move{},

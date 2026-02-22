@@ -1,0 +1,6 @@
+{
+  "path": "events.sqlite",
+  "table": "events",
+  "filenameColumn": "filename",
+  "contentColumn": "content"
+}
