@@ -3,6 +3,7 @@ package fsagent
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -38,5 +39,7 @@ func serveInboundHTTP(conf Config, fnChannel chan<- string, source string) {
 		fmt.Fprint(w, strings.ToUpper(source)+" event accepted")
 	})
 
-	fmt.Print(http.ListenAndServe(conf.Port, nil))
+	if err := http.ListenAndServe(conf.Port, nil); err != nil {
+		log.Printf("inbound %s server stopped: %v", source, err)
+	}
 }

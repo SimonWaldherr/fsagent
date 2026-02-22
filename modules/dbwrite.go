@@ -58,16 +58,19 @@ func (DBWrite) Perform(config interface{}, fileName string) error {
 		"CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY AUTOINCREMENT, %s TEXT, %s TEXT);",
 		c.Table, c.FilenameColumn, c.ContentColumn,
 	)
-	if _, err := exec.Command("sqlite3", c.Path, createSQL).CombinedOutput(); err != nil {
-		return err
+	if out, err := exec.Command("sqlite3", c.Path, createSQL).CombinedOutput(); err != nil {
+		return fmt.Errorf("sqlite create table failed: %v (%s)", err, strings.TrimSpace(string(out)))
 	}
 
 	insertSQL := fmt.Sprintf(
 		"INSERT INTO %s (%s, %s) VALUES (%s, %s);",
 		c.Table, c.FilenameColumn, c.ContentColumn, dbQuote(fileName), dbQuote(string(content)),
 	)
-	_, err = exec.Command("sqlite3", c.Path, insertSQL).CombinedOutput()
-	return err
+	out, err := exec.Command("sqlite3", c.Path, insertSQL).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("sqlite insert failed: %v (%s)", err, strings.TrimSpace(string(out)))
+	}
+	return nil
 }
 
 func dbQuote(v string) string {

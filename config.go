@@ -64,9 +64,7 @@ func runConfig(wg *sync.WaitGroup, conf Config, i int, stop chan struct{}, watch
 		switch conf.Trigger {
 		case "fsevent":
 			handleFsEvent(conf, eventCache, i, watcher)
-		case "http":
-			handleFile(conf, <-filenameChannel[folderidx])
-		case "mail", "irc":
+		case "http", "mail", "irc":
 			handleFile(conf, <-filenameChannel[folderidx])
 		case "ticker":
 			handleTicker(conf, eventCache, i, timer)
