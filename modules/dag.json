@@ -4,5 +4,6 @@
   "headers": {
     "Authorization": "Bearer $DAG_TOKEN"
   },
+  "maxPayloadBytes": 1048576,
   "timeout": 60
 }

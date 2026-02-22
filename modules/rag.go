@@ -1,6 +1,7 @@
 package modules
 
 import (
+	"fmt"
 	"os"
 	"strings"
 )
@@ -36,9 +37,10 @@ func (RAG) Perform(config interface{}, fileName string) error {
 	contextParts := make([]string, 0, len(c.ContextFiles))
 	for _, contextFile := range c.ContextFiles {
 		contextContent, err := os.ReadFile(contextFile)
-		if err == nil {
-			contextParts = append(contextParts, string(contextContent))
+		if err != nil {
+			return fmt.Errorf("could not read context file %q: %v", contextFile, err)
 		}
+		contextParts = append(contextParts, string(contextContent))
 	}
 
 	mergedPrompt := c.Prompt

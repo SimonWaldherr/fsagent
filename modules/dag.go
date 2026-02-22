@@ -4,16 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
 )
 
 type dagConfig struct {
-	URL     string            `json:"url"`
-	DagID   string            `json:"dagId"`
-	Headers map[string]string `json:"headers"`
-	Timeout int               `json:"timeout"`
+	URL             string            `json:"url"`
+	DagID           string            `json:"dagId"`
+	Headers         map[string]string `json:"headers"`
+	Timeout         int               `json:"timeout"`
+	MaxPayloadBytes int               `json:"maxPayloadBytes"`
 }
 
 type DAG struct{}
@@ -47,6 +49,9 @@ func (DAG) Perform(config interface{}, fileName string) error {
 	if err != nil {
 		return err
 	}
+	if c.MaxPayloadBytes > 0 && len(payload) > c.MaxPayloadBytes {
+		return fmt.Errorf("payload exceeds maxPayloadBytes (%v > %v)", len(payload), c.MaxPayloadBytes)
+	}
 
 	timeout := 60
 	if c.Timeout > 0 {
@@ -70,7 +75,8 @@ func (DAG) Perform(config interface{}, fileName string) error {
 	defer rsp.Body.Close()
 
 	if rsp.StatusCode < 200 || rsp.StatusCode > 299 {
-		return fmt.Errorf("dag request failed with status %v", rsp.StatusCode)
+		b, _ := io.ReadAll(rsp.Body)
+		return fmt.Errorf("dag request to %q failed with status %v: %s", c.URL, rsp.StatusCode, string(b))
 	}
 
 	return nil

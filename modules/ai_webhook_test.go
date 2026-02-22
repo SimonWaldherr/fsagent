@@ -156,3 +156,40 @@ func TestDAGPerform(t *testing.T) {
 		t.Fatalf("unexpected conf payload: %#v", payload["conf"])
 	}
 }
+
+func TestRAGPerformMissingContextFile(t *testing.T) {
+	dir := t.TempDir()
+	in := dir + "/in.txt"
+	if err := os.WriteFile(in, []byte("question"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	rag := RAG{}
+	err := rag.Perform(&ragConfig{
+		URL:          "http://localhost:1234/v1/chat/completions",
+		Model:        "model",
+		Prompt:       "answer",
+		ContextFiles: []string{dir + "/missing.txt"},
+	}, in)
+	if err == nil {
+		t.Fatal("expected error for missing context file")
+	}
+}
+
+func TestDAGPerformMaxPayloadBytes(t *testing.T) {
+	dir := t.TempDir()
+	in := dir + "/in.txt"
+	if err := os.WriteFile(in, []byte("too-large"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	dag := DAG{}
+	err := dag.Perform(&dagConfig{
+		URL:             "http://example.invalid",
+		DagID:           "example-dag",
+		MaxPayloadBytes: 3,
+	}, in)
+	if err == nil || !strings.Contains(err.Error(), "maxPayloadBytes") {
+		t.Fatalf("expected maxPayloadBytes error, got: %v", err)
+	}
+}
