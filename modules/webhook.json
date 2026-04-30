@@ -1,0 +1,10 @@
+{
+  "url": "https://example.com/webhook",
+  "method": "POST",
+  "contentType": "application/json",
+  "headers": {
+    "Authorization": "Bearer $WEBHOOK_TOKEN"
+  },
+  "body": "{\"filename\":\"$filename\",\"content\":\"$filecontent\"}",
+  "timeout": 60
+}

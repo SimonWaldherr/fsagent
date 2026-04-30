@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>ORCA Workflow Editor</title>
+  <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 0; }
+    #toolbar { padding: 10px; background: #f4f4f4; border-bottom: 1px solid #ddd; }
+    #blocklyDiv { height: 60vh; width: 100%; }
+    #fallbackEditor { padding: 12px; }
+    .fallback-node { border: 1px solid #ddd; padding: 10px; margin-bottom: 8px; background: #fafafa; }
+    .fallback-node input { width: 100%; margin-bottom: 6px; box-sizing: border-box; }
+    #status { padding: 8px 12px; font-size: 14px; color: #444; background: #fff8e1; border-bottom: 1px solid #eee; }
+    #error { padding: 8px 12px; color: #8a1f11; background: #fdecea; border-bottom: 1px solid #f5c6cb; display: none; }
+    textarea { width: 100%; height: 18vh; }
+    button { margin-right: 8px; }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button onclick="addNode()">Add Node</button>
+    <button onclick="saveWorkflow()">Save</button>
+    <button onclick="loadWorkflow()">Load</button>
+    <button onclick="exportMachine()">Export FSAgent JSON</button>
+    <button onclick="exportMermaid()">Export Mermaid</button>
+    <input id="workflowId" value="default" />
+  </div>
+  <div id="status">Loading editor…</div>
+  <div id="error"></div>
+  <div id="blocklyDiv"></div>
+  <div id="fallbackEditor" hidden>
+    <div id="fallbackNodes"></div>
+  </div>
+  <textarea id="out" placeholder="Output"></textarea>
+
+  <xml id="toolbox" style="display:none">
+    <category name="Flow">
+      <block type="node"></block>
+    </category>
+  </xml>
+
+  <script>
+    let workspace = null;
+    let useFallbackEditor = false;
+    const BLOCK_INITIAL_X = 20;
+    const BLOCK_INITIAL_Y = 20;
+    const BLOCK_VERTICAL_SPACING = 70;
+    let nextNodeCounter = 1;
+
+    function setStatus(message) {
+      document.getElementById('status').textContent = message;
+    }
+
+    function showError(message) {
+      const error = document.getElementById('error');
+      error.textContent = message;
+      error.style.display = 'block';
+    }
+
+    function clearError() {
+      const error = document.getElementById('error');
+      error.textContent = '';
+      error.style.display = 'none';
+    }
+
+    function createFallbackNode(node) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'fallback-node';
+
+      const idInput = document.createElement('input');
+      idInput.dataset.field = 'id';
+      idInput.placeholder = 'node id';
+      idInput.value = node.id || '';
+
+      const toolInput = document.createElement('input');
+      toolInput.dataset.field = 'tool';
+      toolInput.placeholder = 'tool';
+      toolInput.value = node.tool || 'sleep';
+
+      const dependsOnInput = document.createElement('input');
+      dependsOnInput.dataset.field = 'dependsOn';
+      dependsOnInput.placeholder = 'dependsOn (comma separated)';
+      dependsOnInput.value = (node.dependsOn || []).join(',');
+
+      const configInput = document.createElement('input');
+      configInput.dataset.field = 'config';
+      configInput.placeholder = 'config JSON';
+      configInput.value = JSON.stringify(node.config || {});
+
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.textContent = 'Remove';
+      removeButton.onclick = () => wrapper.remove();
+
+      wrapper.appendChild(idInput);
+      wrapper.appendChild(toolInput);
+      wrapper.appendChild(dependsOnInput);
+      wrapper.appendChild(configInput);
+      wrapper.appendChild(removeButton);
+      document.getElementById('fallbackNodes').appendChild(wrapper);
+    }
+
+    function ensureAtLeastOneFallbackNode() {
+      if (!document.querySelector('.fallback-node')) {
+        createFallbackNode({ id: nextNodeId(), tool: 'sleep', dependsOn: [], config: {} });
+      }
+    }
+
+    function safeNodeLabel(id) {
+      return String(id || '').replace(/[\r\n\t]/g, ' ').trim();
+    }
+
+    function nextNodeId() {
+      const id = 'n' + nextNodeCounter;
+      nextNodeCounter += 1;
+      return id;
+    }
+
+    function syncNextNodeCounter(nodes) {
+      let maxCounter = 0;
+      (nodes || []).forEach(node => {
+        const match = String(node.id || '').match(/^n(\d+)$/);
+        if (match) {
+          maxCounter = Math.max(maxCounter, Number(match[1]));
+        }
+      });
+      nextNodeCounter = maxCounter + 1;
+    }
+
+    function blockPosition(index) {
+      return {
+        x: BLOCK_INITIAL_X,
+        y: BLOCK_INITIAL_Y + index * BLOCK_VERTICAL_SPACING
+      };
+    }
+
+    function collectFallbackNodes() {
+      const nodes = [];
+      const rows = document.querySelectorAll('.fallback-node');
+      for (const row of rows) {
+        const id = row.querySelector('[data-field="id"]').value;
+        const tool = row.querySelector('[data-field="tool"]').value;
+        const depRaw = row.querySelector('[data-field="dependsOn"]').value || '';
+        const dependsOn = depRaw.split(',').map(x => x.trim()).filter(Boolean);
+        let config = {};
+        try {
+          config = JSON.parse(row.querySelector('[data-field="config"]').value || '{}');
+        } catch (e) {
+          const rawConfig = row.querySelector('[data-field="config"]').value || '';
+          console.error('JSON parse error in node', safeNodeLabel(id), `config-length=${rawConfig.length}`, e);
+          showError(`Config JSON parse error in node "${safeNodeLabel(id)}": ${e.message}`);
+          throw e;
+        }
+        nodes.push({ id, tool, dependsOn, config });
+      }
+      return nodes;
+    }
+
+    function initBlockly() {
+      if (!window.Blockly || typeof Blockly.inject !== 'function') {
+        useFallbackEditor = true;
+        document.getElementById('blocklyDiv').hidden = true;
+        document.getElementById('fallbackEditor').hidden = false;
+        ensureAtLeastOneFallbackNode();
+        setStatus('Fallback editor active (offline/local mode).');
+        return;
+      }
+
+      Blockly.defineBlocksWithJsonArray([
+        {
+          "type": "node",
+          "message0": "node id %1 tool %2 dependsOn %3 config(json) %4",
+          "args0": [
+            { "type": "field_input", "name": "ID", "text": "n1" },
+            { "type": "field_input", "name": "TOOL", "text": "sleep" },
+            { "type": "field_input", "name": "DEP", "text": "" },
+            { "type": "field_input", "name": "CFG", "text": "{}" }
+          ],
+          "previousStatement": null,
+          "nextStatement": null,
+          "colour": 220
+        }
+      ]);
+
+      workspace = Blockly.inject('blocklyDiv', { toolbox: document.getElementById('toolbox') });
+      setStatus('Blockly editor active.');
+    }
+
+    function addNode() {
+      if (useFallbackEditor) {
+        createFallbackNode({ id: nextNodeId(), tool: 'sleep', dependsOn: [], config: {} });
+        return;
+      }
+      const existingBlockCount = workspace.getAllBlocks(false).length;
+      const block = workspace.newBlock('node');
+      block.initSvg();
+      block.render();
+      const position = blockPosition(existingBlockCount);
+      block.moveBy(position.x, position.y);
+    }
+
+    function blocksToGraph() {
+      if (useFallbackEditor) {
+        return {
+          id: document.getElementById('workflowId').value || 'default',
+          name: 'ORCA Workflow',
+          nodes: collectFallbackNodes()
+        };
+      }
+      const nodes = [];
+      workspace.getTopBlocks(true).forEach(top => {
+        let b = top;
+        while (b) {
+          const id = b.getFieldValue('ID');
+          const tool = b.getFieldValue('TOOL');
+          const depRaw = b.getFieldValue('DEP') || '';
+          const dependsOn = depRaw.split(',').map(x => x.trim()).filter(Boolean);
+          let cfg = {};
+          try {
+            cfg = JSON.parse(b.getFieldValue('CFG') || '{}');
+          } catch (e) {
+            console.error(e);
+            document.getElementById('out').value = 'Config JSON parse error in node ' + id + ': ' + e.message;
+          }
+          nodes.push({ id, tool, dependsOn, config: cfg });
+          b = b.getNextBlock();
+        }
+      });
+      return { id: document.getElementById('workflowId').value || 'default', name: 'ORCA Workflow', nodes };
+    }
+
+    function graphToBlocks(spec) {
+      if (useFallbackEditor) {
+        const container = document.getElementById('fallbackNodes');
+        container.textContent = '';
+        syncNextNodeCounter(spec.nodes || []);
+        (spec.nodes || []).forEach(node => createFallbackNode(node));
+        ensureAtLeastOneFallbackNode();
+        return;
+      }
+      workspace.clear();
+      syncNextNodeCounter(spec.nodes || []);
+      (spec.nodes || []).forEach((n, i) => {
+        const b = workspace.newBlock('node');
+        b.initSvg();
+        b.render();
+        b.setFieldValue(n.id || ('n'+(i+1)), 'ID');
+        b.setFieldValue(n.tool || 'sleep', 'TOOL');
+        b.setFieldValue((n.dependsOn || []).join(','), 'DEP');
+        b.setFieldValue(JSON.stringify(n.config || {}), 'CFG');
+        const position = blockPosition(i);
+        b.moveBy(position.x, position.y);
+      });
+    }
+
+    async function saveWorkflow() {
+      clearError();
+      const spec = blocksToGraph();
+      const r = await fetch('/api/orca/workflows', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(spec) });
+      document.getElementById('out').value = await r.text();
+    }
+
+    async function loadWorkflow() {
+      clearError();
+      const id = document.getElementById('workflowId').value;
+      const r = await fetch('/api/orca/workflows/' + encodeURIComponent(id));
+      const spec = await r.json();
+      document.getElementById('workflowId').value = spec.id || id;
+      graphToBlocks(spec);
+      document.getElementById('out').value = JSON.stringify(spec, null, 2);
+    }
+
+    async function exportMachine() {
+      clearError();
+      const id = document.getElementById('workflowId').value;
+      const r = await fetch('/api/orca/workflows/' + encodeURIComponent(id) + '?format=machine');
+      document.getElementById('out').value = await r.text();
+    }
+
+    async function exportMermaid() {
+      clearError();
+      const id = document.getElementById('workflowId').value;
+      const r = await fetch('/api/orca/workflows/' + encodeURIComponent(id) + '?format=mermaid');
+      document.getElementById('out').value = await r.text();
+    }
+
+    initBlockly();
+  </script>
+</body>
+</html>

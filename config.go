@@ -16,15 +16,16 @@ import (
 
 // Config represents an element of the application configuration.
 type Config struct {
-	Folder   string `json:"folder"`
-	Port     string `json:"port"`
-	Trigger  string `json:"trigger"`
-	Ticker   int    `json:"ticker"`
-	Match    string `json:"match"`
-	Action   Action `json:"action"`
-	OnlyNew  bool   `json:"onlynew"`
-	Verbose  bool   `json:"verbose"`
-	Debounce bool   `json:"debounce"`
+	Folder     string `json:"folder"`
+	Port       string `json:"port"`
+	Trigger    string `json:"trigger"`
+	Ticker     int    `json:"ticker"`
+	Match      string `json:"match"`
+	Action     Action `json:"action"`
+	OnlyNew    bool   `json:"onlynew"`
+	Verbose    bool   `json:"verbose"`
+	Debounce   bool   `json:"debounce"`
+	WorkflowDB string `json:"workflowDB"`
 }
 
 func runConfig(wg *sync.WaitGroup, conf Config, i int, stop chan struct{}, watcher map[string]*fsnotify.Watcher) {
@@ -48,6 +49,9 @@ func runConfig(wg *sync.WaitGroup, conf Config, i int, stop chan struct{}, watch
 	case "http":
 		filenameChannel[folderidx] = make(chan string)
 		go serveHTTP(conf, filenameChannel[folderidx])
+	case "mail", "irc":
+		filenameChannel[folderidx] = make(chan string)
+		go serveInboundHTTP(conf, filenameChannel[folderidx], conf.Trigger)
 	case "ticker":
 		timer = time.NewTicker(time.Millisecond * time.Duration(conf.Ticker))
 	}
@@ -60,7 +64,7 @@ func runConfig(wg *sync.WaitGroup, conf Config, i int, stop chan struct{}, watch
 		switch conf.Trigger {
 		case "fsevent":
 			handleFsEvent(conf, eventCache, i, watcher)
-		case "http":
+		case "http", "mail", "irc":
 			handleFile(conf, <-filenameChannel[folderidx])
 		case "ticker":
 			handleTicker(conf, eventCache, i, timer)

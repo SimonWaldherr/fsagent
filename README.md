@@ -28,6 +28,46 @@ fsagent can easily installed by the ```go get```-command:
 
 ```go get simonwaldherr.de/go/fsagent```
 
+## Quickstart / Schnellstart
+
+### English
+
+Fast local test setup:
+
+1. Install Go and, if you want ORCA workflow persistence or the `dbwrite` action, `sqlite3`.
+2. Start FSAgent with the HTTP example config:
+   ```bash
+   go run ./cmd/fsagent ./cmd/fsagent/web-example-config.json
+   ```
+3. Open:
+   - `http://127.0.0.1:8080/orca` for the ORCA editor
+   - `http://127.0.0.1:8080/upload` for file uploads
+4. Test an inbound trigger quickly:
+   ```bash
+   curl -X POST http://127.0.0.1:8080/mail -d 'subject: test'
+   curl -X POST http://127.0.0.1:8080/irc -d 'PRIVMSG #test :hello'
+   ```
+5. If external CDNs are blocked, the ORCA page automatically switches to a local fallback editor so the workflow API remains testable offline.
+
+### Deutsch
+
+Schneller lokaler Testaufbau:
+
+1. Go installieren und für ORCA-Workflow-Persistenz oder die Action `dbwrite` zusätzlich `sqlite3`.
+2. FSAgent mit der HTTP-Beispielkonfiguration starten:
+   ```bash
+   go run ./cmd/fsagent ./cmd/fsagent/web-example-config.json
+   ```
+3. Öffnen:
+   - `http://127.0.0.1:8080/orca` für den ORCA-Editor
+   - `http://127.0.0.1:8080/upload` für Datei-Uploads
+4. Einen Trigger schnell testen:
+   ```bash
+   curl -X POST http://127.0.0.1:8080/mail -d 'subject: test'
+   curl -X POST http://127.0.0.1:8080/irc -d 'PRIVMSG #test :hallo'
+   ```
+5. Falls externe CDNs blockiert sind, schaltet die ORCA-Seite automatisch auf einen lokalen Fallback-Editor um und bleibt so offline testbar.
+
 ## Config
 
 fsagent can do many things, these can be defined and configured with json files.
@@ -99,6 +139,11 @@ Trigger | Info
 fsevent | file system event based on [fsnotify](github.com/fsnotify/fsnotify)
 ticker  | checks for new files at a customizable frequency 
 http    | files can be uploaded via a web form
+mail    | receives raw mail payloads via HTTP POST and forwards them as files
+irc     | receives raw IRC message payloads via HTTP POST and forwards them as files
+
+When using the `http` trigger, FSAgent now also serves an embedded ORCA editor at `/orca` with workflow APIs at `/api/orca/workflows`.
+Set `"workflowDB": "orca.sqlite"` in the HTTP config to persist graph workflows in SQLite.
 
 ### Actions
 
@@ -112,6 +157,13 @@ Move       | moves a file to a new location
 Decompress | decompresses a file
 Compress   | compresses a file
 HttpPostR. | sends the content of a file in a HTTP Post Request Body
+Webhook    | sends file content to external webhook/API interfaces
+OpenAI     | sends file content to OpenAI chat completion APIs
+LMStudio   | sends file content to LM Studio OpenAI-compatible APIs
+Ollama     | sends file content to Ollama for local LLM workflows
+RAG        | runs retrieval-augmented prompts with additional context files
+DAG        | triggers DAG/workflow orchestrators with file-based run payloads
+DBWrite    | writes filename and content into a SQLite table
 SendMail   | sends the file as mail attachment
 Sleep      | waits for a specified duration
 

@@ -2,6 +2,7 @@
   "verbose": true,
   "port": ":8080",
   "folder": "/upload",
+  "workflowDB": "orca.sqlite",
   "trigger": "http",
   "match": "^*$",
   "action": [{
