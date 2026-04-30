@@ -28,6 +28,46 @@ fsagent can easily installed by the ```go get```-command:
 
 ```go get simonwaldherr.de/go/fsagent```
 
+## Quickstart / Schnellstart
+
+### English
+
+Fast local test setup:
+
+1. Install Go and, if you want ORCA workflow persistence or the `dbwrite` action, `sqlite3`.
+2. Start FSAgent with the HTTP example config:
+   ```bash
+   go run ./cmd/fsagent ./cmd/fsagent/web-example-config.json
+   ```
+3. Open:
+   - `http://127.0.0.1:8080/orca` for the ORCA editor
+   - `http://127.0.0.1:8080/upload` for file uploads
+4. Test an inbound trigger quickly:
+   ```bash
+   curl -X POST http://127.0.0.1:8080/mail -d 'subject: test'
+   curl -X POST http://127.0.0.1:8080/irc -d 'PRIVMSG #test :hello'
+   ```
+5. If external CDNs are blocked, the ORCA page automatically switches to a local fallback editor so the workflow API remains testable offline.
+
+### Deutsch
+
+Schneller lokaler Testaufbau:
+
+1. Go installieren und für ORCA-Workflow-Persistenz oder die Action `dbwrite` zusätzlich `sqlite3`.
+2. FSAgent mit der HTTP-Beispielkonfiguration starten:
+   ```bash
+   go run ./cmd/fsagent ./cmd/fsagent/web-example-config.json
+   ```
+3. Öffnen:
+   - `http://127.0.0.1:8080/orca` für den ORCA-Editor
+   - `http://127.0.0.1:8080/upload` für Datei-Uploads
+4. Einen Trigger schnell testen:
+   ```bash
+   curl -X POST http://127.0.0.1:8080/mail -d 'subject: test'
+   curl -X POST http://127.0.0.1:8080/irc -d 'PRIVMSG #test :hallo'
+   ```
+5. Falls externe CDNs blockiert sind, schaltet die ORCA-Seite automatisch auf einen lokalen Fallback-Editor um und bleibt so offline testbar.
+
 ## Config
 
 fsagent can do many things, these can be defined and configured with json files.

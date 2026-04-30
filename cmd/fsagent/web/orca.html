@@ -8,19 +8,28 @@
     body { font-family: sans-serif; margin: 0; }
     #toolbar { padding: 10px; background: #f4f4f4; border-bottom: 1px solid #ddd; }
     #blocklyDiv { height: 60vh; width: 100%; }
+    #fallbackEditor { padding: 12px; }
+    .fallback-node { border: 1px solid #ddd; padding: 10px; margin-bottom: 8px; background: #fafafa; }
+    .fallback-node input { width: 100%; margin-bottom: 6px; box-sizing: border-box; }
+    #status { padding: 8px 12px; font-size: 14px; color: #444; background: #fff8e1; border-bottom: 1px solid #eee; }
     textarea { width: 100%; height: 18vh; }
     button { margin-right: 8px; }
   </style>
 </head>
 <body>
   <div id="toolbar">
+    <button onclick="addNode()">Add Node</button>
     <button onclick="saveWorkflow()">Save</button>
     <button onclick="loadWorkflow()">Load</button>
     <button onclick="exportMachine()">Export FSAgent JSON</button>
     <button onclick="exportMermaid()">Export Mermaid</button>
     <input id="workflowId" value="default" />
   </div>
+  <div id="status">Loading editor…</div>
   <div id="blocklyDiv"></div>
+  <div id="fallbackEditor" hidden>
+    <div id="fallbackNodes"></div>
+  </div>
   <textarea id="out" placeholder="Output"></textarea>
 
   <xml id="toolbox" style="display:none">
@@ -30,25 +39,99 @@
   </xml>
 
   <script>
-    Blockly.defineBlocksWithJsonArray([
-      {
-        "type": "node",
-        "message0": "node id %1 tool %2 dependsOn %3 config(json) %4",
-        "args0": [
-          { "type": "field_input", "name": "ID", "text": "n1" },
-          { "type": "field_input", "name": "TOOL", "text": "sleep" },
-          { "type": "field_input", "name": "DEP", "text": "" },
-          { "type": "field_input", "name": "CFG", "text": "{}" }
-        ],
-        "previousStatement": null,
-        "nextStatement": null,
-        "colour": 220
-      }
-    ]);
+    let workspace = null;
+    let useFallbackEditor = false;
 
-    const workspace = Blockly.inject('blocklyDiv', { toolbox: document.getElementById('toolbox') });
+    function setStatus(message) {
+      document.getElementById('status').textContent = message;
+    }
+
+    function createFallbackNode(node) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'fallback-node';
+      wrapper.innerHTML = `
+        <input data-field="id" placeholder="node id" value="${node.id || ''}">
+        <input data-field="tool" placeholder="tool" value="${node.tool || 'sleep'}">
+        <input data-field="dependsOn" placeholder="dependsOn (comma separated)" value="${(node.dependsOn || []).join(',')}">
+        <input data-field="config" placeholder='config JSON' value='${JSON.stringify(node.config || {})}'>
+        <button type="button">Remove</button>
+      `;
+      wrapper.querySelector('button').onclick = () => wrapper.remove();
+      document.getElementById('fallbackNodes').appendChild(wrapper);
+    }
+
+    function collectFallbackNodes() {
+      const nodes = [];
+      const rows = document.querySelectorAll('.fallback-node');
+      for (const row of rows) {
+        const id = row.querySelector('[data-field="id"]').value;
+        const tool = row.querySelector('[data-field="tool"]').value;
+        const depRaw = row.querySelector('[data-field="dependsOn"]').value || '';
+        const dependsOn = depRaw.split(',').map(x => x.trim()).filter(Boolean);
+        let config = {};
+        try {
+          config = JSON.parse(row.querySelector('[data-field="config"]').value || '{}');
+        } catch (e) {
+          console.error(e);
+          document.getElementById('out').value = 'Config JSON parse error in node ' + id + ': ' + e.message;
+          throw e;
+        }
+        nodes.push({ id, tool, dependsOn, config });
+      }
+      return nodes;
+    }
+
+    function initBlockly() {
+      if (!window.Blockly || typeof Blockly.inject !== 'function') {
+        useFallbackEditor = true;
+        document.getElementById('blocklyDiv').hidden = true;
+        document.getElementById('fallbackEditor').hidden = false;
+        if (!document.querySelector('.fallback-node')) {
+          createFallbackNode({ id: 'n1', tool: 'sleep', dependsOn: [], config: {} });
+        }
+        setStatus('Fallback editor active (offline/local mode).');
+        return;
+      }
+
+      Blockly.defineBlocksWithJsonArray([
+        {
+          "type": "node",
+          "message0": "node id %1 tool %2 dependsOn %3 config(json) %4",
+          "args0": [
+            { "type": "field_input", "name": "ID", "text": "n1" },
+            { "type": "field_input", "name": "TOOL", "text": "sleep" },
+            { "type": "field_input", "name": "DEP", "text": "" },
+            { "type": "field_input", "name": "CFG", "text": "{}" }
+          ],
+          "previousStatement": null,
+          "nextStatement": null,
+          "colour": 220
+        }
+      ]);
+
+      workspace = Blockly.inject('blocklyDiv', { toolbox: document.getElementById('toolbox') });
+      setStatus('Blockly editor active.');
+    }
+
+    function addNode() {
+      if (useFallbackEditor) {
+        createFallbackNode({ id: 'n' + (document.querySelectorAll('.fallback-node').length + 1), tool: 'sleep', dependsOn: [], config: {} });
+        return;
+      }
+      const block = workspace.newBlock('node');
+      block.initSvg();
+      block.render();
+      block.moveBy(20, 20 + workspace.getAllBlocks(false).length * 70);
+    }
 
     function blocksToGraph() {
+      if (useFallbackEditor) {
+        return {
+          id: document.getElementById('workflowId').value || 'default',
+          name: 'ORCA Workflow',
+          nodes: collectFallbackNodes()
+        };
+      }
       const nodes = [];
       workspace.getTopBlocks(true).forEach(top => {
         let b = top;
@@ -72,6 +155,15 @@
     }
 
     function graphToBlocks(spec) {
+      if (useFallbackEditor) {
+        const container = document.getElementById('fallbackNodes');
+        container.innerHTML = '';
+        (spec.nodes || []).forEach(node => createFallbackNode(node));
+        if (!document.querySelector('.fallback-node')) {
+          createFallbackNode({ id: 'n1', tool: 'sleep', dependsOn: [], config: {} });
+        }
+        return;
+      }
       workspace.clear();
       (spec.nodes || []).forEach((n, i) => {
         const b = workspace.newBlock('node');
@@ -81,7 +173,7 @@
         b.setFieldValue(n.tool || 'sleep', 'TOOL');
         b.setFieldValue((n.dependsOn || []).join(','), 'DEP');
         b.setFieldValue(JSON.stringify(n.config || {}), 'CFG');
-        if (i === 0) b.moveBy(20, 20 + i*70);
+        b.moveBy(20, 20 + i*70);
       });
     }
 
@@ -95,6 +187,7 @@
       const id = document.getElementById('workflowId').value;
       const r = await fetch('/api/orca/workflows/' + encodeURIComponent(id));
       const spec = await r.json();
+      document.getElementById('workflowId').value = spec.id || id;
       graphToBlocks(spec);
       document.getElementById('out').value = JSON.stringify(spec, null, 2);
     }
@@ -110,6 +203,8 @@
       const r = await fetch('/api/orca/workflows/' + encodeURIComponent(id) + '?format=mermaid');
       document.getElementById('out').value = await r.text();
     }
+
+    initBlockly();
   </script>
 </body>
 </html>
