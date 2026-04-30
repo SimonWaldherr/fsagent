@@ -233,7 +233,7 @@
     function graphToBlocks(spec) {
       if (useFallbackEditor) {
         const container = document.getElementById('fallbackNodes');
-        container.innerHTML = '';
+        container.textContent = '';
         syncNextNodeCounter(spec.nodes || []);
         (spec.nodes || []).forEach(node => createFallbackNode(node));
         ensureAtLeastOneFallbackNode();
