@@ -12,6 +12,7 @@
     .fallback-node { border: 1px solid #ddd; padding: 10px; margin-bottom: 8px; background: #fafafa; }
     .fallback-node input { width: 100%; margin-bottom: 6px; box-sizing: border-box; }
     #status { padding: 8px 12px; font-size: 14px; color: #444; background: #fff8e1; border-bottom: 1px solid #eee; }
+    #error { padding: 8px 12px; color: #8a1f11; background: #fdecea; border-bottom: 1px solid #f5c6cb; display: none; }
     textarea { width: 100%; height: 18vh; }
     button { margin-right: 8px; }
   </style>
@@ -26,6 +27,7 @@
     <input id="workflowId" value="default" />
   </div>
   <div id="status">Loading editor…</div>
+  <div id="error"></div>
   <div id="blocklyDiv"></div>
   <div id="fallbackEditor" hidden>
     <div id="fallbackNodes"></div>
@@ -41,23 +43,96 @@
   <script>
     let workspace = null;
     let useFallbackEditor = false;
+    const BLOCK_INITIAL_X = 20;
+    const BLOCK_INITIAL_Y = 20;
+    const BLOCK_VERTICAL_SPACING = 70;
+    let nextNodeCounter = 1;
 
     function setStatus(message) {
       document.getElementById('status').textContent = message;
     }
 
+    function showError(message) {
+      const error = document.getElementById('error');
+      error.textContent = message;
+      error.style.display = 'block';
+    }
+
+    function clearError() {
+      const error = document.getElementById('error');
+      error.textContent = '';
+      error.style.display = 'none';
+    }
+
     function createFallbackNode(node) {
       const wrapper = document.createElement('div');
       wrapper.className = 'fallback-node';
-      wrapper.innerHTML = `
-        <input data-field="id" placeholder="node id" value="${node.id || ''}">
-        <input data-field="tool" placeholder="tool" value="${node.tool || 'sleep'}">
-        <input data-field="dependsOn" placeholder="dependsOn (comma separated)" value="${(node.dependsOn || []).join(',')}">
-        <input data-field="config" placeholder='config JSON' value='${JSON.stringify(node.config || {})}'>
-        <button type="button">Remove</button>
-      `;
-      wrapper.querySelector('button').onclick = () => wrapper.remove();
+
+      const idInput = document.createElement('input');
+      idInput.dataset.field = 'id';
+      idInput.placeholder = 'node id';
+      idInput.value = node.id || '';
+
+      const toolInput = document.createElement('input');
+      toolInput.dataset.field = 'tool';
+      toolInput.placeholder = 'tool';
+      toolInput.value = node.tool || 'sleep';
+
+      const dependsOnInput = document.createElement('input');
+      dependsOnInput.dataset.field = 'dependsOn';
+      dependsOnInput.placeholder = 'dependsOn (comma separated)';
+      dependsOnInput.value = (node.dependsOn || []).join(',');
+
+      const configInput = document.createElement('input');
+      configInput.dataset.field = 'config';
+      configInput.placeholder = 'config JSON';
+      configInput.value = JSON.stringify(node.config || {});
+
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.textContent = 'Remove';
+      removeButton.onclick = () => wrapper.remove();
+
+      wrapper.appendChild(idInput);
+      wrapper.appendChild(toolInput);
+      wrapper.appendChild(dependsOnInput);
+      wrapper.appendChild(configInput);
+      wrapper.appendChild(removeButton);
       document.getElementById('fallbackNodes').appendChild(wrapper);
+    }
+
+    function ensureAtLeastOneFallbackNode() {
+      if (!document.querySelector('.fallback-node')) {
+        createFallbackNode({ id: nextNodeId(), tool: 'sleep', dependsOn: [], config: {} });
+      }
+    }
+
+    function safeNodeLabel(id) {
+      return String(id || '').replace(/[\r\n\t]/g, ' ').trim();
+    }
+
+    function nextNodeId() {
+      const id = 'n' + nextNodeCounter;
+      nextNodeCounter += 1;
+      return id;
+    }
+
+    function syncNextNodeCounter(nodes) {
+      let maxCounter = 0;
+      (nodes || []).forEach(node => {
+        const match = String(node.id || '').match(/^n(\d+)$/);
+        if (match) {
+          maxCounter = Math.max(maxCounter, Number(match[1]));
+        }
+      });
+      nextNodeCounter = maxCounter + 1;
+    }
+
+    function blockPosition(index) {
+      return {
+        x: BLOCK_INITIAL_X,
+        y: BLOCK_INITIAL_Y + index * BLOCK_VERTICAL_SPACING
+      };
     }
 
     function collectFallbackNodes() {
@@ -72,8 +147,9 @@
         try {
           config = JSON.parse(row.querySelector('[data-field="config"]').value || '{}');
         } catch (e) {
-          console.error(e);
-          document.getElementById('out').value = 'Config JSON parse error in node ' + id + ': ' + e.message;
+          const rawConfig = row.querySelector('[data-field="config"]').value || '';
+          console.error('JSON parse error in node', safeNodeLabel(id), `config-length=${rawConfig.length}`, e);
+          showError(`Config JSON parse error in node "${safeNodeLabel(id)}": ${e.message}`);
           throw e;
         }
         nodes.push({ id, tool, dependsOn, config });
@@ -86,9 +162,7 @@
         useFallbackEditor = true;
         document.getElementById('blocklyDiv').hidden = true;
         document.getElementById('fallbackEditor').hidden = false;
-        if (!document.querySelector('.fallback-node')) {
-          createFallbackNode({ id: 'n1', tool: 'sleep', dependsOn: [], config: {} });
-        }
+        ensureAtLeastOneFallbackNode();
         setStatus('Fallback editor active (offline/local mode).');
         return;
       }
@@ -115,13 +189,15 @@
 
     function addNode() {
       if (useFallbackEditor) {
-        createFallbackNode({ id: 'n' + (document.querySelectorAll('.fallback-node').length + 1), tool: 'sleep', dependsOn: [], config: {} });
+        createFallbackNode({ id: nextNodeId(), tool: 'sleep', dependsOn: [], config: {} });
         return;
       }
+      const existingBlockCount = workspace.getAllBlocks(false).length;
       const block = workspace.newBlock('node');
       block.initSvg();
       block.render();
-      block.moveBy(20, 20 + workspace.getAllBlocks(false).length * 70);
+      const position = blockPosition(existingBlockCount);
+      block.moveBy(position.x, position.y);
     }
 
     function blocksToGraph() {
@@ -158,13 +234,13 @@
       if (useFallbackEditor) {
         const container = document.getElementById('fallbackNodes');
         container.innerHTML = '';
+        syncNextNodeCounter(spec.nodes || []);
         (spec.nodes || []).forEach(node => createFallbackNode(node));
-        if (!document.querySelector('.fallback-node')) {
-          createFallbackNode({ id: 'n1', tool: 'sleep', dependsOn: [], config: {} });
-        }
+        ensureAtLeastOneFallbackNode();
         return;
       }
       workspace.clear();
+      syncNextNodeCounter(spec.nodes || []);
       (spec.nodes || []).forEach((n, i) => {
         const b = workspace.newBlock('node');
         b.initSvg();
@@ -173,17 +249,20 @@
         b.setFieldValue(n.tool || 'sleep', 'TOOL');
         b.setFieldValue((n.dependsOn || []).join(','), 'DEP');
         b.setFieldValue(JSON.stringify(n.config || {}), 'CFG');
-        b.moveBy(20, 20 + i*70);
+        const position = blockPosition(i);
+        b.moveBy(position.x, position.y);
       });
     }
 
     async function saveWorkflow() {
+      clearError();
       const spec = blocksToGraph();
       const r = await fetch('/api/orca/workflows', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(spec) });
       document.getElementById('out').value = await r.text();
     }
 
     async function loadWorkflow() {
+      clearError();
       const id = document.getElementById('workflowId').value;
       const r = await fetch('/api/orca/workflows/' + encodeURIComponent(id));
       const spec = await r.json();
@@ -193,12 +272,14 @@
     }
 
     async function exportMachine() {
+      clearError();
       const id = document.getElementById('workflowId').value;
       const r = await fetch('/api/orca/workflows/' + encodeURIComponent(id) + '?format=machine');
       document.getElementById('out').value = await r.text();
     }
 
     async function exportMermaid() {
+      clearError();
       const id = document.getElementById('workflowId').value;
       const r = await fetch('/api/orca/workflows/' + encodeURIComponent(id) + '?format=mermaid');
       document.getElementById('out').value = await r.text();
