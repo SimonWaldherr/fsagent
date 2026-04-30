@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/SimonWaldherr/golibs/cachedfile"
-	gfile "github.com/SimonWaldherr/golibs/file"
+	"simonwaldherr.de/go/golibs/cachedfile"
+	gfile "simonwaldherr.de/go/golibs/file"
 
 	"simonwaldherr.de/go/fsagent/modules"
 )
